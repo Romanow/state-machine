@@ -8,9 +8,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
+import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.event.StateMachineEvent;
+import org.springframework.statemachine.persist.StateMachineRuntimePersister;
 import ru.romanow.state.machine.models.Events;
 import ru.romanow.state.machine.models.States;
 
@@ -22,7 +24,15 @@ public class StateMachineConfiguration
     private static final Logger logger = LoggerFactory.getLogger(StateMachineConfiguration.class);
 
     @Override
-    public void configure(StateMachineStateConfigurer<States, Events> states) throws Exception {
+    public void configure(StateMachineConfigurationConfigurer<States, Events> config)
+            throws Exception {
+        config.withConfiguration()
+              .autoStartup(true);
+    }
+
+    @Override
+    public void configure(StateMachineStateConfigurer<States, Events> states)
+            throws Exception {
         states.withStates()
               .initial(States.DATA_PREPARED)
               .end(States.CALCULATION_FINISHED)
@@ -113,7 +123,7 @@ public class StateMachineConfiguration
 
     @Bean
     public ApplicationListener<StateMachineEvent> stateMachineEventApplicationListener() {
-        return event -> logger.info(event.toString());
+        return event -> logger.debug(event.toString());
     }
 
 }

@@ -28,8 +28,6 @@ import static reactor.core.publisher.Mono.just;
 @ActiveProfiles("test")
 @SpringBootTest
 @Import(DatabaseTestConfiguration.class)
-//@Transactional
-//@AutoConfigureTestEntityManager
 class StateMachineApplicationTest {
 
     public static final UUID CALCULATION_UID_1 = UUID.randomUUID();
@@ -52,7 +50,6 @@ class StateMachineApplicationTest {
     @Test
     void test() {
         var stateMachine = stateMachineFactory.getStateMachine(CALCULATION_UID_1);
-        stateMachine.startReactively().subscribe();
 
         assertThat(stateMachine.getState().getId()).isEqualTo(States.DATA_PREPARED);
 
