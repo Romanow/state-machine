@@ -1,0 +1,57 @@
+plugins {
+    id "java"
+    id "idea"
+    id "org.springframework.boot" version "2.7.0"
+    id "io.spring.dependency-management" version "1.0.11.RELEASE"
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+ext {
+    springBootVersion = "2.7.0"
+    springStatemachineVersion = "3.2.0"
+    jetbrainsAnnotationsVersion = "22.0.0"
+    postgresContainerVersion = "1.16.0"
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.boot:spring-boot-dependencies:$springBootVersion"
+        mavenBom "org.springframework.statemachine:spring-statemachine-bom:$springStatemachineVersion"
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.springframework.boot:spring-boot-starter"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation "org.springframework.statemachine:spring-statemachine-starter"
+    implementation "org.springframework.boot:spring-boot-starter-logging"
+
+    implementation "org.postgresql:postgresql"
+    implementation "org.apache.commons:commons-lang3"
+    implementation "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
+
+    compileOnly "org.projectlombok:lombok"
+    annotationProcessor "org.projectlombok:lombok"
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "org.springframework.statemachine:spring-statemachine-test"
+    testImplementation "org.testcontainers:postgresql:$postgresContainerVersion"
+}
+
+test {
+    useJUnitPlatform()
+}
+
+bootJar {
+    archiveFileName = "${project.name}.jar"
+}

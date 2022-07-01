@@ -1,0 +1,12 @@
+.idea/
+.gradle/
+generated/
+out/
+build/
+*.iws
+*.iml
+*.ipr
+.DS_Store
+
+!.idea/codeStyles/
+!.idea/.gitignore
