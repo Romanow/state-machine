@@ -3,16 +3,20 @@ package ru.romanow.state.machine.config;
 import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
+import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.event.StateMachineEvent;
 import org.springframework.statemachine.persist.StateMachineRuntimePersister;
+import org.springframework.statemachine.service.DefaultStateMachineService;
+import org.springframework.statemachine.service.StateMachineService;
 import ru.romanow.state.machine.models.Events;
 import ru.romanow.state.machine.models.States;
 
@@ -23,11 +27,19 @@ public class StateMachineConfiguration
 
     private static final Logger logger = LoggerFactory.getLogger(StateMachineConfiguration.class);
 
+    @Autowired
+    private StateMachineRuntimePersister<States, Events, String> stateMachinePersist;
+
     @Override
     public void configure(StateMachineConfigurationConfigurer<States, Events> config)
             throws Exception {
+        // @formatter:off
         config.withConfiguration()
-              .autoStartup(true);
+                .autoStartup(true)
+              .and()
+                .withPersistence()
+                .runtimePersister(stateMachinePersist);
+        // @formatter:on
     }
 
     @Override
@@ -124,6 +136,13 @@ public class StateMachineConfiguration
     @Bean
     public ApplicationListener<StateMachineEvent> stateMachineEventApplicationListener() {
         return event -> logger.debug(event.toString());
+    }
+
+    @Bean
+    @Autowired
+    public StateMachineService<States, Events> stateMachineService(
+            StateMachineFactory<States, Events> stateMachineFactory) {
+        return new DefaultStateMachineService<>(stateMachineFactory, stateMachinePersist);
     }
 
 }

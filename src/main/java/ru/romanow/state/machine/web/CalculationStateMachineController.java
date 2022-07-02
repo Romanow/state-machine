@@ -11,11 +11,11 @@ import ru.romanow.state.machine.service.CalculationService;
 @RequestMapping("/api/v1")
 @RestController
 @RequiredArgsConstructor
-public class StateMachineController {
+public class CalculationStateMachineController {
 
     private final CalculationService calculationService;
 
-    @GetMapping("/next-state/{calculationUid}")
+    @GetMapping("/calculation/next-state/{calculationUid}")
     public String nextState(@PathVariable UUID calculationUid) {
         return calculationService.nextState(calculationUid);
     }

@@ -5,7 +5,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
-import org.springframework.statemachine.config.StateMachineFactory;
+import org.springframework.statemachine.service.StateMachineService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import ru.romanow.state.machine.models.Events;
@@ -21,6 +21,7 @@ public class CalculationServiceImpl
         implements CalculationService {
 
     private static final Logger logger = getLogger(CalculationServiceImpl.class);
+
     private static final Map<States, Events> NEXT_STATE_EVENT = Map.of(
             States.DATA_PREPARED, Events.ETL_START_EVENT,
             States.ETL_START, Events.ETL_SENT_TO_DRP_EVENT,
@@ -28,11 +29,12 @@ public class CalculationServiceImpl
             States.ETL_ACCEPTED, Events.ETL_COMPLETED_EVENT
     );
 
-    private final StateMachineFactory<States, Events> stateMachineFactory;
+    private final StateMachineService<States, Events> stateMachineService;
 
     @Override
     public String nextState(@NotNull UUID calculationUid) {
-        final var stateMachine = stateMachineFactory.getStateMachine(calculationUid);
+        final var stateMachine = stateMachineService
+                .acquireStateMachine(calculationUid.toString());
 
         final var state = stateMachine.getState().getId();
         logger.info("Current SM '{}' for UID '{}' with state '{}'",
