@@ -1,5 +1,6 @@
 package ru.romanow.state.machine.service;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,19 +23,34 @@ public class CalculationServiceImpl
 
     private static final Logger logger = getLogger(CalculationServiceImpl.class);
 
-    private static final Map<States, Events> NEXT_STATE_EVENT = Map.of(
-            States.DATA_PREPARED, Events.ETL_START_EVENT,
-            States.ETL_START, Events.ETL_SENT_TO_DRP_EVENT,
-            States.ETL_SEND_TO_DRP, Events.ETL_ACCEPTED_EVENT,
-            States.ETL_ACCEPTED, Events.ETL_COMPLETED_EVENT
-    );
+    private static final Map<States, Events> NEXT_STATE_EVENT = new HashMap<>() {
+        {
+            put(States.CALCULATION_STARTED, Events.DATA_PREPARED_EVENT);
+            put(States.DATA_PREPARED, Events.ETL_START_EVENT);
+
+            put(States.ETL_START, Events.ETL_SENT_TO_DRP_EVENT);
+            put(States.ETL_SEND_TO_DRP, Events.ETL_ACCEPTED_EVENT);
+            put(States.ETL_ACCEPTED, Events.ETL_COMPLETED_EVENT);
+            put(States.ETL_COMPLETED, Events.CALCULATION_START_EVENT);
+
+            put(States.CALCULATION_START, Events.CALCULATION_SENT_TO_DRP_EVENT);
+            put(States.CALCULATION_SENT_TO_DRP, Events.CALCULATION_ACCEPTED_EVENT);
+            put(States.CALCULATION_ACCEPTED, Events.CALCULATION_COMPLETED_EVENT);
+            put(States.CALCULATION_COMPLETED, Events.REVERSED_ETL_START_EVENT);
+
+            put(States.REVERSED_ETL_START, Events.REVERSED_ETL_SENT_TO_DRP_EVENT);
+            put(States.REVERSED_ETL_SENT_TO_DRP, Events.REVERSED_ETL_ACCEPTED_EVENT);
+            put(States.REVERSED_ETL_ACCEPTED, Events.REVERSED_COMPLETED_EVENT);
+            put(States.REVERSED_COMPLETED, Events.CALCULATION_FINISHED_EVENT);
+        }
+    };
 
     private final StateMachineService<States, Events> stateMachineService;
 
     @Override
     public String nextState(@NotNull UUID calculationUid) {
         final var stateMachine = stateMachineService
-                .acquireStateMachine(calculationUid.toString());
+                .acquireStateMachine(calculationUid.toString(), true);
 
         final var state = stateMachine.getState().getId();
         logger.info("Current SM '{}' for UID '{}' with state '{}'",
@@ -46,5 +62,4 @@ public class CalculationServiceImpl
 
         return stateMachine.getState().getId().name();
     }
-
 }

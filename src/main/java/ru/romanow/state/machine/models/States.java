@@ -1,6 +1,8 @@
 package ru.romanow.state.machine.models;
 
 public enum States {
+    CALCULATION_STARTED,       // Начальное состояние
+
     DATA_PREPARED,             // Выполнены условия для старта расчета
 
     ETL_START,                 // Старт загрузки в DRP

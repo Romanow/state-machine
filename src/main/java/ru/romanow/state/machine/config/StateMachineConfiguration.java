@@ -1,6 +1,7 @@
 package ru.romanow.state.machine.config;
 
 import java.util.EnumSet;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,20 +16,19 @@ import org.springframework.statemachine.config.builders.StateMachineStateConfigu
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.event.StateMachineEvent;
 import org.springframework.statemachine.persist.StateMachineRuntimePersister;
-import org.springframework.statemachine.service.DefaultStateMachineService;
-import org.springframework.statemachine.service.StateMachineService;
 import ru.romanow.state.machine.models.Events;
 import ru.romanow.state.machine.models.States;
+import ru.romanow.state.machine.service.CustomStateMachineService;
 
 @Configuration
 @EnableStateMachineFactory
+@RequiredArgsConstructor
 public class StateMachineConfiguration
         extends EnumStateMachineConfigurerAdapter<States, Events> {
 
     private static final Logger logger = LoggerFactory.getLogger(StateMachineConfiguration.class);
 
-    @Autowired
-    private StateMachineRuntimePersister<States, Events, String> stateMachinePersist;
+    private final StateMachineRuntimePersister<States, Events, String> stateMachinePersist;
 
     @Override
     public void configure(StateMachineConfigurationConfigurer<States, Events> config)
@@ -46,7 +46,7 @@ public class StateMachineConfiguration
     public void configure(StateMachineStateConfigurer<States, Events> states)
             throws Exception {
         states.withStates()
-              .initial(States.DATA_PREPARED)
+              .initial(States.CALCULATION_STARTED)
               .end(States.CALCULATION_FINISHED)
               .states(EnumSet.allOf(States.class));
     }
@@ -56,6 +56,11 @@ public class StateMachineConfiguration
             throws Exception {
         // @formatter:off
         transitions
+                .withExternal()
+                    .source(States.CALCULATION_STARTED)
+                    .target(States.DATA_PREPARED)
+                    .event(Events.DATA_PREPARED_EVENT)
+                .and()
                 .withExternal()
                     .source(States.DATA_PREPARED)
                     .target(States.ETL_START)
@@ -140,9 +145,8 @@ public class StateMachineConfiguration
 
     @Bean
     @Autowired
-    public StateMachineService<States, Events> stateMachineService(
+    public CustomStateMachineService stateMachineService(
             StateMachineFactory<States, Events> stateMachineFactory) {
-        return new DefaultStateMachineService<>(stateMachineFactory, stateMachinePersist);
+        return new CustomStateMachineService(stateMachinePersist, stateMachineFactory);
     }
-
 }
