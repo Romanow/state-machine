@@ -1,40 +1,50 @@
 package ru.romanow.state.machine;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
+import org.springframework.statemachine.config.StateMachineFactory;
+import org.springframework.statemachine.persist.StateMachineRuntimePersister;
 import org.springframework.statemachine.test.StateMachineTestPlanBuilder;
 import org.springframework.test.context.ActiveProfiles;
+import ru.romanow.state.machine.config.StateMachineConfiguration;
 import ru.romanow.state.machine.domain.Calculation;
 import ru.romanow.state.machine.domain.enums.CalculationType;
 import ru.romanow.state.machine.models.Events;
 import ru.romanow.state.machine.models.States;
 import ru.romanow.state.machine.repostitory.CalculationRepository;
 import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
-import ru.romanow.state.machine.service.CustomStateMachineService;
+import ru.romanow.state.machine.service.CustomStateMachinePersist;
+import ru.romanow.state.machine.service.StateMachineService;
+import ru.romanow.state.machine.service.StateMachineServiceImpl;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
+import static ru.romanow.state.machine.domain.enums.CalculationType.CASH_FLOW;
 
 @ActiveProfiles("test")
 @SpringBootTest
 public class StateMachineStatusTest {
 
-    @MockBean
+    @Autowired
     private CalculationRepository calculationRepository;
 
-    @MockBean
+    @Autowired
     private CalculationStatusRepository calculationStatusRepository;
 
     @Autowired
-    private CustomStateMachineService stateMachineService;
+    private StateMachineService stateMachineService;
 
     @Test
     void test() throws Exception {
@@ -45,7 +55,7 @@ public class StateMachineStatusTest {
                 .thenReturn(List.of());
 
         var stateMachine = stateMachineService
-                .acquireStateMachine(machineId.toString());
+                .acquireStateMachine(CASH_FLOW.value(), machineId.toString());
 
         // @formatter:off
         StateMachineTestPlanBuilder
@@ -107,6 +117,27 @@ public class StateMachineStatusTest {
                 .setName(randomAlphabetic(8))
                 .setType(CalculationType.CASH_FLOW)
                 .setDescription(randomAlphabetic(20));
+    }
+
+    @Configuration
+    @Import(StateMachineConfiguration.class)
+    static class TestConfiguration {
+
+        @Bean
+        public CalculationStatusRepository calculationStatusRepository() {
+            return mock(CalculationStatusRepository.class);
+        }
+
+        @Bean
+        public CalculationRepository calculationRepository() {
+            return mock(CalculationRepository.class);
+        }
+
+        @Bean
+        public StateMachineRuntimePersister<States, Events, String> stateMachinePersist() {
+            return new CustomStateMachinePersist(calculationRepository(), calculationStatusRepository());
+        }
+
     }
 
 }

@@ -17,49 +17,46 @@ import org.springframework.statemachine.StateMachineContext;
 import org.springframework.statemachine.StateMachinePersist;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
-import org.springframework.statemachine.service.StateMachineService;
 import org.springframework.stereotype.Service;
 import ru.romanow.state.machine.models.Events;
 import ru.romanow.state.machine.models.States;
 
 @Service
 @RequiredArgsConstructor
-public class CustomStateMachineService
-        implements StateMachineService<States, Events>,
+public class StateMachineServiceImpl
+        implements StateMachineService,
                    DisposableBean {
-    private static final Logger logger = LoggerFactory.getLogger(CustomStateMachineService.class);
+    private static final Logger logger = LoggerFactory.getLogger(StateMachineServiceImpl.class);
 
     private final StateMachinePersist<States, Events, String> stateMachinePersist;
-    private final StateMachineFactory<States, Events> stateMachineFactory;
+    private final Map<String, StateMachineFactory<States, Events>> stateMachineFactories;
     private final Map<String, StateMachine<States, Events>> machines = new ConcurrentHashMap<>();
 
     @Override
     public final void destroy() {
         for (var machineId : machines.keySet()) {
-            releaseStateMachine(machineId, true);
+            releaseStateMachine(machineId);
         }
     }
 
-    @Override
-    public StateMachine<States, Events> acquireStateMachine(@NotNull String machineId) {
-        return acquireStateMachine(machineId, true);
-    }
-
+    @NotNull
     @Override
     @SneakyThrows
-    public StateMachine<States, Events> acquireStateMachine(@NotNull String machineId, boolean start) {
+    public StateMachine<States, Events> acquireStateMachine(@NotNull String type, @NotNull String machineId) {
         logger.info("Acquiring StateMachine with ID '{}'", machineId);
 
         var stateMachine = machines.get(machineId);
         if (Objects.isNull(stateMachine)) {
-            stateMachine = stateMachineFactory.getStateMachine(machineId);
+            stateMachine = stateMachineFactories
+                    .get("cashflow")
+                    .getStateMachine(machineId);
             machines.put(machineId, stateMachine);
         }
 
         var stateMachineContext = stateMachinePersist.read(machineId);
         stateMachine = restoreStateMachine(stateMachine, stateMachineContext);
 
-        return handleStart(stateMachine, start);
+        return handleStart(stateMachine);
     }
 
     @Override
@@ -67,16 +64,7 @@ public class CustomStateMachineService
         var stateMachine = machines.remove(machineId);
         if (stateMachine != null) {
             logger.info("Releasing StateMachine with id '{}'", machineId);
-            stateMachine.stopReactively().block();
-        }
-    }
-
-    @Override
-    public void releaseStateMachine(@NotNull String machineId, boolean stop) {
-        var stateMachine = machines.remove(machineId);
-        if (stateMachine != null) {
-            logger.info("Releasing StateMachine with id '{}'", machineId);
-            handleStop(stateMachine, stop);
+            handleStop(stateMachine);
         }
     }
 
@@ -89,36 +77,29 @@ public class CustomStateMachineService
         }
         stateMachine.stopReactively().block();
         stateMachine.getStateMachineAccessor()
-                    .doWithAllRegions(
-                            function -> function.resetStateMachineReactively(stateMachineContext)
-                                                .block());
+                    .doWithAllRegions(f -> f.resetStateMachineReactively(stateMachineContext).block());
         return stateMachine;
     }
 
     @NotNull
     @SneakyThrows
-    protected StateMachine<States, Events> handleStart(@NotNull StateMachine<States, Events> stateMachine,
-                                                       boolean start) {
-        if (start) {
-            if (!((Lifecycle) stateMachine).isRunning()) {
-                var listener = new StartListener(stateMachine);
-                stateMachine.addStateListener(listener);
-                stateMachine.startReactively().block();
-                listener.latch.await();
-            }
+    protected StateMachine<States, Events> handleStart(@NotNull StateMachine<States, Events> stateMachine) {
+        if (!((Lifecycle) stateMachine).isRunning()) {
+            var listener = new StartListener(stateMachine);
+            stateMachine.addStateListener(listener);
+            stateMachine.startReactively().block();
+            listener.latch.await();
         }
         return stateMachine;
     }
 
     @SneakyThrows
-    protected void handleStop(@NotNull StateMachine<States, Events> stateMachine, boolean stop) {
-        if (stop) {
-            if (((Lifecycle) stateMachine).isRunning()) {
-                var listener = new StopListener(stateMachine);
-                stateMachine.addStateListener(listener);
-                stateMachine.stopReactively().block();
-                listener.latch.await();
-            }
+    protected void handleStop(@NotNull StateMachine<States, Events> stateMachine) {
+        if (((Lifecycle) stateMachine).isRunning()) {
+            var listener = new StopListener(stateMachine);
+            stateMachine.addStateListener(listener);
+            stateMachine.stopReactively().block();
+            listener.latch.await();
         }
     }
 

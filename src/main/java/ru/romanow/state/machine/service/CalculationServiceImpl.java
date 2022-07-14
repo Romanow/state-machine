@@ -6,7 +6,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
-import org.springframework.statemachine.service.StateMachineService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import ru.romanow.state.machine.models.Events;
@@ -15,6 +14,7 @@ import ru.romanow.state.machine.models.States;
 import static java.lang.Integer.toHexString;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.messaging.support.MessageBuilder.withPayload;
+import static ru.romanow.state.machine.domain.enums.CalculationType.CASH_FLOW;
 
 @Service
 @RequiredArgsConstructor
@@ -45,12 +45,12 @@ public class CalculationServiceImpl
         }
     };
 
-    private final StateMachineService<States, Events> stateMachineService;
+    private final StateMachineService stateMachineService;
 
     @Override
     public String nextState(@NotNull UUID calculationUid) {
         final var stateMachine = stateMachineService
-                .acquireStateMachine(calculationUid.toString(), true);
+                .acquireStateMachine(CASH_FLOW.value(), calculationUid.toString());
 
         final var state = stateMachine.getState().getId();
         logger.info("Current SM '{}' for UID '{}' with state '{}'",
