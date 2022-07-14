@@ -1,6 +1,6 @@
 # Calculation Finite State Machine
 
-![Build Workflow](../../workflows/build/badge.svg?branch=master)
+![Build Workflow](../../workflows/Build%20project/badge.svg?branch=master)
 
 Реализуем State Machine [calculation process](images/Calculation%20State%20Machine.png)
 c
