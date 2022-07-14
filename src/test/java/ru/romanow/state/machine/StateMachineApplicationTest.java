@@ -67,14 +67,14 @@ class StateMachineApplicationTest {
     void test(String uid) {
         var stateMachine = stateMachineService.acquireStateMachine(CASH_FLOW.value(), uid);
 
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CALCULATION_STARTED);
-        stateMachine.sendEvent(just(withPayload(Events.DATA_PREPARED_EVENT).build())).subscribe();
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.DATA_PREPARED);
+        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_CALCULATION_STARTED);
+        stateMachine.sendEvent(just(withPayload(Events.CASH_FLOW_DATA_PREPARED_EVENT).build())).subscribe();
+        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_DATA_PREPARED);
 
         stateMachine = stateMachineService.acquireStateMachine(CASH_FLOW.value(), uid);
 
-        stateMachine.sendEvent(just(withPayload(Events.ETL_START_EVENT).build())).subscribe();
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.ETL_START);
+        stateMachine.sendEvent(just(withPayload(Events.CASH_FLOW_ETL_START_EVENT).build())).subscribe();
+        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_ETL_START);
     }
 
     @Test
@@ -82,11 +82,11 @@ class StateMachineApplicationTest {
         var stateMachine = stateMachineService
                 .acquireStateMachine(CASH_FLOW.value(), CALCULATION_UID_1.toString());
 
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CALCULATION_STARTED);
-        stateMachine.sendEvent(just(withPayload(Events.ETL_COMPLETED_EVENT).build()))
+        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_CALCULATION_STARTED);
+        stateMachine.sendEvent(just(withPayload(Events.CASH_FLOW_ETL_COMPLETED_EVENT).build()))
                     .doOnNext(result -> assertThat(result.getResultType()).isEqualTo(ResultType.DENIED))
                     .subscribe();
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CALCULATION_STARTED);
+        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_CALCULATION_STARTED);
     }
 
     @NotNull
