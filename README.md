@@ -1,5 +1,7 @@
 # Calculation Finite State Machine
 
+![Build Workflow](../../workflows/build/badge.svg?branch=master)
+
 Реализуем State Machine [calculation process](images/Calculation%20State%20Machine.png)
 c
 использованием [Spring State Machine](https://docs.spring.io/spring-statemachine/docs/current/reference/)
