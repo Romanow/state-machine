@@ -8,8 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import ru.romanow.state.machine.models.Events;
-import ru.romanow.state.machine.models.States;
+import ru.romanow.state.machine.models.CashflowEvents;
+import ru.romanow.state.machine.models.CashflowStates;
 
 import static java.lang.Integer.toHexString;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -23,25 +23,28 @@ public class CalculationServiceImpl
 
     private static final Logger logger = getLogger(CalculationServiceImpl.class);
 
-    private static final Map<States, Events> NEXT_STATE_EVENT = new HashMap<>() {
+    private static final Map<CashflowStates, CashflowEvents> NEXT_STATE_EVENT = new HashMap<>() {
         {
-            put(States.CASH_FLOW_CALCULATION_STARTED, Events.CASH_FLOW_DATA_PREPARED_EVENT);
-            put(States.CASH_FLOW_DATA_PREPARED, Events.CASH_FLOW_ETL_START_EVENT);
+            put(CashflowStates.CALCULATION_STARTED, CashflowEvents.DATA_PREPARED_EVENT);
+            put(CashflowStates.DATA_PREPARED, CashflowEvents.DATA_COPIED_TO_STAGED_EVENT);
+            put(CashflowStates.DATA_COPIED_TO_STAGED, CashflowEvents.ETL_START_EVENT);
 
-            put(States.CASH_FLOW_ETL_START, Events.CASH_FLOW_ETL_SENT_TO_DRP_EVENT);
-            put(States.CASH_FLOW_ETL_SEND_TO_DRP, Events.CASH_FLOW_ETL_ACCEPTED_EVENT);
-            put(States.CASH_FLOW_ETL_ACCEPTED, Events.CASH_FLOW_ETL_COMPLETED_EVENT);
-            put(States.CASH_FLOW_ETL_COMPLETED, Events.CASH_FLOW_CALCULATION_START_EVENT);
+            put(CashflowStates.ETL_START, CashflowEvents.ETL_SENT_TO_DRP_EVENT);
+            put(CashflowStates.ETL_SEND_TO_DRP, CashflowEvents.ETL_ACCEPTED_EVENT);
+            put(CashflowStates.ETL_ACCEPTED, CashflowEvents.ETL_COMPLETED_EVENT);
+            put(CashflowStates.ETL_COMPLETED, CashflowEvents.CALCULATION_START_EVENT);
 
-            put(States.CASH_FLOW_CALCULATION_START, Events.CASH_FLOW_CALCULATION_SENT_TO_DRP_EVENT);
-            put(States.CASH_FLOW_CALCULATION_SENT_TO_DRP, Events.CASH_FLOW_CALCULATION_ACCEPTED_EVENT);
-            put(States.CASH_FLOW_CALCULATION_ACCEPTED, Events.CASH_FLOW_CALCULATION_COMPLETED_EVENT);
-            put(States.CASH_FLOW_CALCULATION_COMPLETED, Events.CASH_FLOW_REVERSED_ETL_START_EVENT);
+            put(CashflowStates.CALCULATION_START, CashflowEvents.CALCULATION_SENT_TO_DRP_EVENT);
+            put(CashflowStates.CALCULATION_SENT_TO_DRP, CashflowEvents.CALCULATION_ACCEPTED_EVENT);
+            put(CashflowStates.CALCULATION_ACCEPTED, CashflowEvents.CALCULATION_COMPLETED_EVENT);
+            put(CashflowStates.CALCULATION_COMPLETED, CashflowEvents.REVERSED_ETL_START_EVENT);
 
-            put(States.CASH_FLOW_REVERSED_ETL_START, Events.CASH_FLOW_REVERSED_ETL_SENT_TO_DRP_EVENT);
-            put(States.CASH_FLOW_REVERSED_ETL_SENT_TO_DRP, Events.CASH_FLOW_REVERSED_ETL_ACCEPTED_EVENT);
-            put(States.CASH_FLOW_REVERSED_ETL_ACCEPTED, Events.CASH_FLOW_REVERSED_COMPLETED_EVENT);
-            put(States.CASH_FLOW_REVERSED_COMPLETED, Events.CASH_FLOW_CALCULATION_FINISHED_EVENT);
+            put(CashflowStates.REVERSED_ETL_START, CashflowEvents.REVERSED_ETL_SENT_TO_DRP_EVENT);
+            put(CashflowStates.REVERSED_ETL_SENT_TO_DRP, CashflowEvents.REVERSED_ETL_ACCEPTED_EVENT);
+            put(CashflowStates.REVERSED_ETL_ACCEPTED, CashflowEvents.REVERSED_COMPLETED_EVENT);
+            put(CashflowStates.REVERSED_COMPLETED, CashflowEvents.DATA_COPIED_FROM_STAGED_EVENT);
+
+            put(CashflowStates.DATA_COPIED_FROM_STAGED, CashflowEvents.CALCULATION_FINISHED_EVENT);
         }
     };
 

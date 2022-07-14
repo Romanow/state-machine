@@ -18,8 +18,8 @@ import org.springframework.statemachine.StateMachinePersist;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.stereotype.Service;
-import ru.romanow.state.machine.models.Events;
-import ru.romanow.state.machine.models.States;
+import ru.romanow.state.machine.models.CashflowEvents;
+import ru.romanow.state.machine.models.CashflowStates;
 
 @Service
 @RequiredArgsConstructor
@@ -28,9 +28,9 @@ public class StateMachineServiceImpl
                    DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(StateMachineServiceImpl.class);
 
-    private final StateMachinePersist<States, Events, String> stateMachinePersist;
-    private final Map<String, StateMachineFactory<States, Events>> stateMachineFactories;
-    private final Map<String, StateMachine<States, Events>> machines = new ConcurrentHashMap<>();
+    private final StateMachinePersist<CashflowStates, CashflowEvents, String> stateMachinePersist;
+    private final Map<String, StateMachineFactory<CashflowStates, CashflowEvents>> stateMachineFactories;
+    private final Map<String, StateMachine<CashflowStates, CashflowEvents>> machines = new ConcurrentHashMap<>();
 
     @Override
     public final void destroy() {
@@ -42,7 +42,7 @@ public class StateMachineServiceImpl
     @NotNull
     @Override
     @SneakyThrows
-    public StateMachine<States, Events> acquireStateMachine(@NotNull String type, @NotNull String machineId) {
+    public StateMachine<CashflowStates, CashflowEvents> acquireStateMachine(@NotNull String type, @NotNull String machineId) {
         logger.info("Acquiring StateMachine with ID '{}'", machineId);
 
         var stateMachine = machines.get(machineId);
@@ -69,9 +69,9 @@ public class StateMachineServiceImpl
     }
 
     @NotNull
-    protected StateMachine<States, Events> restoreStateMachine(
-            @NotNull StateMachine<States, Events> stateMachine,
-            @Nullable StateMachineContext<States, Events> stateMachineContext) {
+    protected StateMachine<CashflowStates, CashflowEvents> restoreStateMachine(
+            @NotNull StateMachine<CashflowStates, CashflowEvents> stateMachine,
+            @Nullable StateMachineContext<CashflowStates, CashflowEvents> stateMachineContext) {
         if (stateMachineContext == null) {
             return stateMachine;
         }
@@ -83,7 +83,7 @@ public class StateMachineServiceImpl
 
     @NotNull
     @SneakyThrows
-    protected StateMachine<States, Events> handleStart(@NotNull StateMachine<States, Events> stateMachine) {
+    protected StateMachine<CashflowStates, CashflowEvents> handleStart(@NotNull StateMachine<CashflowStates, CashflowEvents> stateMachine) {
         if (!((Lifecycle) stateMachine).isRunning()) {
             var listener = new StartListener(stateMachine);
             stateMachine.addStateListener(listener);
@@ -94,7 +94,7 @@ public class StateMachineServiceImpl
     }
 
     @SneakyThrows
-    protected void handleStop(@NotNull StateMachine<States, Events> stateMachine) {
+    protected void handleStop(@NotNull StateMachine<CashflowStates, CashflowEvents> stateMachine) {
         if (((Lifecycle) stateMachine).isRunning()) {
             var listener = new StopListener(stateMachine);
             stateMachine.addStateListener(listener);
@@ -104,34 +104,34 @@ public class StateMachineServiceImpl
     }
 
     private static class StartListener
-            extends StateMachineListenerAdapter<States, Events> {
+            extends StateMachineListenerAdapter<CashflowStates, CashflowEvents> {
 
         private final CountDownLatch latch = new CountDownLatch(1);
-        private final StateMachine<States, Events> stateMachine;
+        private final StateMachine<CashflowStates, CashflowEvents> stateMachine;
 
-        public StartListener(StateMachine<States, Events> stateMachine) {
+        public StartListener(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
             this.stateMachine = stateMachine;
         }
 
         @Override
-        public void stateMachineStarted(StateMachine<States, Events> stateMachine) {
+        public void stateMachineStarted(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
             this.stateMachine.removeStateListener(this);
             latch.countDown();
         }
     }
 
     private static class StopListener
-            extends StateMachineListenerAdapter<States, Events> {
+            extends StateMachineListenerAdapter<CashflowStates, CashflowEvents> {
 
         private final CountDownLatch latch = new CountDownLatch(1);
-        private final StateMachine<States, Events> stateMachine;
+        private final StateMachine<CashflowStates, CashflowEvents> stateMachine;
 
-        public StopListener(StateMachine<States, Events> stateMachine) {
+        public StopListener(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
             this.stateMachine = stateMachine;
         }
 
         @Override
-        public void stateMachineStopped(StateMachine<States, Events> stateMachine) {
+        public void stateMachineStopped(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
             this.stateMachine.removeStateListener(this);
             latch.countDown();
         }

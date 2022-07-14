@@ -16,8 +16,8 @@ import org.springframework.test.context.ActiveProfiles;
 import ru.romanow.state.machine.config.StateMachineConfiguration;
 import ru.romanow.state.machine.domain.Calculation;
 import ru.romanow.state.machine.domain.enums.CalculationType;
-import ru.romanow.state.machine.models.Events;
-import ru.romanow.state.machine.models.States;
+import ru.romanow.state.machine.models.CashflowEvents;
+import ru.romanow.state.machine.models.CashflowStates;
 import ru.romanow.state.machine.repostitory.CalculationRepository;
 import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 import ru.romanow.state.machine.service.CustomStateMachinePersist;
@@ -44,7 +44,8 @@ public class StateMachineStatusTest {
     private StateMachineService stateMachineService;
 
     @Test
-    void test() throws Exception {
+    void testSuccess()
+            throws Exception {
         var machineId = UUID.randomUUID();
         when(calculationRepository.findByUid(machineId))
                 .thenReturn(buildCalculation(machineId));
@@ -56,91 +57,101 @@ public class StateMachineStatusTest {
 
         // @formatter:off
         StateMachineTestPlanBuilder
-                .<States, Events>builder()
+                .<CashflowStates, CashflowEvents>builder()
                 .defaultAwaitTime(1)
                 .stateMachine(stateMachine)
                 .step()
-                    .expectState(States.CASH_FLOW_CALCULATION_STARTED)
+                    .expectState(CashflowStates.CALCULATION_STARTED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_DATA_PREPARED_EVENT)
+                    .sendEvent(CashflowEvents.DATA_PREPARED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_DATA_PREPARED)
+                    .expectState(CashflowStates.DATA_PREPARED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_CALCULATION_START_EVENT)
+                    .sendEvent(CashflowEvents.DATA_COPIED_TO_STAGED_EVENT)
+                    .expectStateChanged(1)
+                    .expectState(CashflowStates.DATA_COPIED_TO_STAGED)
+                .and()
+                .step()
+                    .sendEvent(CashflowEvents.CALCULATION_START_EVENT)
                     .expectEventNotAccepted(1)
-                    .expectState(States.CASH_FLOW_DATA_PREPARED)
+                    .expectState(CashflowStates.DATA_COPIED_TO_STAGED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_ETL_START_EVENT)
+                    .sendEvent(CashflowEvents.ETL_START_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_ETL_START)
+                    .expectState(CashflowStates.ETL_START)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_ETL_SENT_TO_DRP_EVENT)
+                    .sendEvent(CashflowEvents.ETL_SENT_TO_DRP_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_ETL_SEND_TO_DRP)
+                    .expectState(CashflowStates.ETL_SEND_TO_DRP)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_ETL_ACCEPTED_EVENT)
+                    .sendEvent(CashflowEvents.ETL_ACCEPTED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_ETL_ACCEPTED)
+                    .expectState(CashflowStates.ETL_ACCEPTED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_ETL_COMPLETED_EVENT)
+                    .sendEvent(CashflowEvents.ETL_COMPLETED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_ETL_COMPLETED)
+                    .expectState(CashflowStates.ETL_COMPLETED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_CALCULATION_START_EVENT)
+                    .sendEvent(CashflowEvents.CALCULATION_START_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_CALCULATION_START)
+                    .expectState(CashflowStates.CALCULATION_START)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_CALCULATION_SENT_TO_DRP_EVENT)
+                    .sendEvent(CashflowEvents.CALCULATION_SENT_TO_DRP_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_CALCULATION_SENT_TO_DRP)
+                    .expectState(CashflowStates.CALCULATION_SENT_TO_DRP)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_CALCULATION_ACCEPTED_EVENT)
+                    .sendEvent(CashflowEvents.CALCULATION_ACCEPTED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_CALCULATION_ACCEPTED)
+                    .expectState(CashflowStates.CALCULATION_ACCEPTED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_CALCULATION_COMPLETED_EVENT)
+                    .sendEvent(CashflowEvents.CALCULATION_COMPLETED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_CALCULATION_COMPLETED)
+                    .expectState(CashflowStates.CALCULATION_COMPLETED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_REVERSED_ETL_START_EVENT)
+                    .sendEvent(CashflowEvents.REVERSED_ETL_START_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_REVERSED_ETL_START)
+                    .expectState(CashflowStates.REVERSED_ETL_START)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_REVERSED_ETL_SENT_TO_DRP_EVENT)
+                    .sendEvent(CashflowEvents.REVERSED_ETL_SENT_TO_DRP_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_REVERSED_ETL_SENT_TO_DRP)
+                    .expectState(CashflowStates.REVERSED_ETL_SENT_TO_DRP)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_REVERSED_ETL_ACCEPTED_EVENT)
+                    .sendEvent(CashflowEvents.REVERSED_ETL_ACCEPTED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_REVERSED_ETL_ACCEPTED)
+                    .expectState(CashflowStates.REVERSED_ETL_ACCEPTED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_REVERSED_COMPLETED_EVENT)
+                    .sendEvent(CashflowEvents.REVERSED_COMPLETED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_REVERSED_COMPLETED)
+                    .expectState(CashflowStates.REVERSED_COMPLETED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_CALCULATION_FINISHED_EVENT)
+                    .sendEvent(CashflowEvents.DATA_COPIED_FROM_STAGED_EVENT)
                     .expectStateChanged(1)
-                    .expectState(States.CASH_FLOW_CALCULATION_FINISHED)
+                    .expectState(CashflowStates.DATA_COPIED_FROM_STAGED)
                 .and()
                 .step()
-                    .sendEvent(Events.CASH_FLOW_REVERSED_ETL_START_EVENT)
+                    .sendEvent(CashflowEvents.CALCULATION_FINISHED_EVENT)
+                    .expectStateChanged(1)
+                    .expectState(CashflowStates.CALCULATION_FINISHED)
+                .and()
+                .step()
+                    .sendEvent(CashflowEvents.REVERSED_ETL_START_EVENT)
                     .expectEventNotAccepted(1)
-                    .expectState(States.CASH_FLOW_CALCULATION_FINISHED)
+                    .expectState(CashflowStates.CALCULATION_FINISHED)
                 .and()
                 .build()
                 .test();
@@ -154,6 +165,51 @@ public class StateMachineStatusTest {
                 .setName(randomAlphabetic(8))
                 .setType(CalculationType.CASH_FLOW)
                 .setDescription(randomAlphabetic(20));
+    }
+
+    @Test
+    void testError()
+            throws Exception {
+        var machineId = UUID.randomUUID();
+        when(calculationRepository.findByUid(machineId))
+                .thenReturn(buildCalculation(machineId));
+        when(calculationStatusRepository.getCalculationLastState(eq(machineId), any(Pageable.class)))
+                .thenReturn(List.of());
+
+        var stateMachine = stateMachineService
+                .acquireStateMachine(CASH_FLOW.value(), machineId.toString());
+
+        // @formatter:off
+        StateMachineTestPlanBuilder
+                .<CashflowStates, CashflowEvents>builder()
+                .defaultAwaitTime(1)
+                .stateMachine(stateMachine)
+                .step()
+                    .expectState(CashflowStates.CALCULATION_STARTED)
+                .and()
+                .step()
+                    .sendEvent(CashflowEvents.DATA_PREPARED_EVENT)
+                    .expectStateChanged(1)
+                    .expectState(CashflowStates.DATA_PREPARED)
+                .and()
+                .step()
+                    .sendEvent(CashflowEvents.DATA_COPIED_TO_STAGED_EVENT)
+                    .expectStateChanged(1)
+                    .expectState(CashflowStates.DATA_COPIED_TO_STAGED)
+                .and()
+                .step()
+                    .sendEvent(CashflowEvents.CALCULATION_ERROR_EVENT)
+                    .expectStateChanged(1)
+                    .expectState(CashflowStates.CALCULATION_ERROR)
+                .and()
+                .step()
+                    .sendEvent(CashflowEvents.ETL_ACCEPTED_EVENT)
+                    .expectEventNotAccepted(1)
+                    .expectState(CashflowStates.CALCULATION_ERROR)
+                .and()
+                .build()
+                .test();
+        // @formatter:on
     }
 
     @Configuration
@@ -171,7 +227,7 @@ public class StateMachineStatusTest {
         }
 
         @Bean
-        public StateMachineRuntimePersister<States, Events, String> stateMachinePersist() {
+        public StateMachineRuntimePersister<CashflowStates, CashflowEvents, String> stateMachinePersist() {
             return new CustomStateMachinePersist(calculationRepository(), calculationStatusRepository());
         }
 

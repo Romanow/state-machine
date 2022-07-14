@@ -21,7 +21,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import ru.romanow.state.machine.models.States;
+import ru.romanow.state.machine.models.CashflowStates;
 
 @Getter
 @Setter
@@ -37,7 +37,7 @@ public class CalculationStatus {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private States status;
+    private CashflowStates status;
 
     @ManyToOne
     @JoinColumn(name = "calculation_id", foreignKey = @ForeignKey(name = "fk_calculation_status_calculation_id"))

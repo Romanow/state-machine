@@ -13,8 +13,8 @@ import org.springframework.statemachine.support.StateMachineInterceptor;
 import org.springframework.statemachine.transition.Transition;
 import org.springframework.stereotype.Component;
 import ru.romanow.state.machine.domain.CalculationStatus;
-import ru.romanow.state.machine.models.Events;
-import ru.romanow.state.machine.models.States;
+import ru.romanow.state.machine.models.CashflowEvents;
+import ru.romanow.state.machine.models.CashflowStates;
 import ru.romanow.state.machine.repostitory.CalculationRepository;
 import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 
@@ -25,8 +25,8 @@ import static org.springframework.data.domain.Pageable.ofSize;
 @Component
 @RequiredArgsConstructor
 public class CustomStateMachinePersist
-        extends AbstractPersistingStateMachineInterceptor<States, Events, String>
-        implements StateMachineRuntimePersister<States, Events, String> {
+        extends AbstractPersistingStateMachineInterceptor<CashflowStates, CashflowEvents, String>
+        implements StateMachineRuntimePersister<CashflowStates, CashflowEvents, String> {
 
     private static final Logger logger = getLogger(CustomStateMachinePersist.class);
 
@@ -34,7 +34,7 @@ public class CustomStateMachinePersist
     private final CalculationStatusRepository calculationStatusRepository;
 
     @Override
-    public void write(StateMachineContext<States, Events> context, String machineId) {
+    public void write(StateMachineContext<CashflowStates, CashflowEvents> context, String machineId) {
         logger.info("Write StateMachine '{}' state {}", machineId, context.getState());
 
         var calculation = calculationRepository.findByUid(fromString(machineId));
@@ -46,7 +46,7 @@ public class CustomStateMachinePersist
     }
 
     @Override
-    public StateMachineContext<States, Events> read(String machineId) {
+    public StateMachineContext<CashflowStates, CashflowEvents> read(String machineId) {
         var states = calculationStatusRepository
                 .getCalculationLastState(fromString(machineId), ofSize(1));
 
@@ -61,10 +61,10 @@ public class CustomStateMachinePersist
     }
 
     @Override
-    public void postStateChange(State<States, Events> state, Message<Events> message,
-                                Transition<States, Events> transition,
-                                StateMachine<States, Events> stateMachine,
-                                StateMachine<States, Events> rootStateMachine) {
+    public void postStateChange(State<CashflowStates, CashflowEvents> state, Message<CashflowEvents> message,
+                                Transition<CashflowStates, CashflowEvents> transition,
+                                StateMachine<CashflowStates, CashflowEvents> stateMachine,
+                                StateMachine<CashflowStates, CashflowEvents> rootStateMachine) {
         // Не записываем переход из Start в Init State (CALCULATION_STARTED), т.к. при инициализации
         // StateMachine, которой нет в памяти, вызывается `persist.write(context, machineId)` на
         // init transaction, т.е. в CalculationStatus всегда записывается начальное состояние.
@@ -74,7 +74,7 @@ public class CustomStateMachinePersist
     }
 
     @Override
-    public StateMachineInterceptor<States, Events> getInterceptor() {
+    public StateMachineInterceptor<CashflowStates, CashflowEvents> getInterceptor() {
         return this;
     }
 }

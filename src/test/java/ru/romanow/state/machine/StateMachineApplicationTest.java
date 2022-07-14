@@ -18,8 +18,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import ru.romanow.state.machine.config.DatabaseTestConfiguration;
 import ru.romanow.state.machine.domain.Calculation;
-import ru.romanow.state.machine.models.Events;
-import ru.romanow.state.machine.models.States;
+import ru.romanow.state.machine.models.CashflowEvents;
+import ru.romanow.state.machine.models.CashflowStates;
 import ru.romanow.state.machine.repostitory.CalculationRepository;
 import ru.romanow.state.machine.service.StateMachineServiceImpl;
 
@@ -67,14 +67,14 @@ class StateMachineApplicationTest {
     void test(String uid) {
         var stateMachine = stateMachineService.acquireStateMachine(CASH_FLOW.value(), uid);
 
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_CALCULATION_STARTED);
-        stateMachine.sendEvent(just(withPayload(Events.CASH_FLOW_DATA_PREPARED_EVENT).build())).subscribe();
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_DATA_PREPARED);
+        assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.CALCULATION_STARTED);
+        stateMachine.sendEvent(just(withPayload(CashflowEvents.DATA_PREPARED_EVENT).build())).subscribe();
+        assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.DATA_PREPARED);
 
         stateMachine = stateMachineService.acquireStateMachine(CASH_FLOW.value(), uid);
 
-        stateMachine.sendEvent(just(withPayload(Events.CASH_FLOW_ETL_START_EVENT).build())).subscribe();
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_ETL_START);
+        stateMachine.sendEvent(just(withPayload(CashflowEvents.DATA_COPIED_TO_STAGED_EVENT).build())).subscribe();
+        assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.DATA_COPIED_TO_STAGED);
     }
 
     @Test
@@ -82,11 +82,11 @@ class StateMachineApplicationTest {
         var stateMachine = stateMachineService
                 .acquireStateMachine(CASH_FLOW.value(), CALCULATION_UID_1.toString());
 
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_CALCULATION_STARTED);
-        stateMachine.sendEvent(just(withPayload(Events.CASH_FLOW_ETL_COMPLETED_EVENT).build()))
+        assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.CALCULATION_STARTED);
+        stateMachine.sendEvent(just(withPayload(CashflowEvents.ETL_COMPLETED_EVENT).build()))
                     .doOnNext(result -> assertThat(result.getResultType()).isEqualTo(ResultType.DENIED))
                     .subscribe();
-        assertThat(stateMachine.getState().getId()).isEqualTo(States.CASH_FLOW_CALCULATION_STARTED);
+        assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.CALCULATION_STARTED);
     }
 
     @NotNull
