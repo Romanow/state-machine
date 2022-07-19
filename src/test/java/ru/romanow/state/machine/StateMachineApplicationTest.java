@@ -73,7 +73,11 @@ class StateMachineApplicationTest {
 
         stateMachine = stateMachineService.acquireStateMachine(CASH_FLOW.value(), uid);
 
-        stateMachine.sendEvent(just(withPayload(CashflowEvents.DATA_COPIED_TO_STAGED_EVENT).build())).subscribe();
+        var message = withPayload(CashflowEvents.DATA_COPIED_TO_STAGED_EVENT).build();
+        var result = stateMachine
+                .sendEvent(just(message)).blockLast();
+
+        assertThat(result.getResultType()).isEqualTo(ResultType.ACCEPTED);
         assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.DATA_COPIED_TO_STAGED);
     }
 
@@ -83,9 +87,11 @@ class StateMachineApplicationTest {
                 .acquireStateMachine(CASH_FLOW.value(), CALCULATION_UID_1.toString());
 
         assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.CALCULATION_STARTED);
-        stateMachine.sendEvent(just(withPayload(CashflowEvents.ETL_COMPLETED_EVENT).build()))
-                    .doOnNext(result -> assertThat(result.getResultType()).isEqualTo(ResultType.DENIED))
-                    .subscribe();
+
+        var message = just(withPayload(CashflowEvents.ETL_COMPLETED_EVENT).build());
+        var result = stateMachine.sendEvent(message).blockLast();
+
+        assertThat(result.getResultType()).isEqualTo(ResultType.DENIED);
         assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.CALCULATION_STARTED);
     }
 
