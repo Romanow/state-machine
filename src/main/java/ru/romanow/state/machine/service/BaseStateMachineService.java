@@ -14,23 +14,20 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.context.Lifecycle;
 import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.StateMachineContext;
-import org.springframework.statemachine.StateMachinePersist;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
-import org.springframework.stereotype.Service;
-import ru.romanow.state.machine.models.CashflowEvents;
-import ru.romanow.state.machine.models.CashflowStates;
+import ru.romanow.state.machine.domain.CalculationStatus;
+import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 
-@Service
 @RequiredArgsConstructor
-public class StateMachineServiceImpl
-        implements StateMachineService,
+public abstract class BaseStateMachineService<States, Events, CS extends CalculationStatus<States>, REPO extends CalculationStatusRepository<States, CS>>
+        implements StateMachineService<States, Events>,
                    DisposableBean {
-    private static final Logger logger = LoggerFactory.getLogger(StateMachineServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(BaseStateMachineService.class);
 
-    private final StateMachinePersist<CashflowStates, CashflowEvents, String> stateMachinePersist;
-    private final Map<String, StateMachineFactory<CashflowStates, CashflowEvents>> stateMachineFactories;
-    private final Map<String, StateMachine<CashflowStates, CashflowEvents>> machines = new ConcurrentHashMap<>();
+    private final BaseCustomStateMachinePersist<States, Events, CS, REPO> stateMachinePersist;
+    private final Map<String, StateMachine<States, Events>> machines = new ConcurrentHashMap<>();
+    private final StateMachineFactory<States, Events> stateMachineFactory;
 
     @Override
     public final void destroy() {
@@ -42,14 +39,12 @@ public class StateMachineServiceImpl
     @NotNull
     @Override
     @SneakyThrows
-    public StateMachine<CashflowStates, CashflowEvents> acquireStateMachine(@NotNull String type, @NotNull String machineId) {
+    public StateMachine<States, Events> acquireStateMachine(@NotNull String type, @NotNull String machineId) {
         logger.info("Acquiring StateMachine with ID '{}'", machineId);
 
         var stateMachine = machines.get(machineId);
         if (Objects.isNull(stateMachine)) {
-            stateMachine = stateMachineFactories
-                    .get("cashflow")
-                    .getStateMachine(machineId);
+            stateMachine = stateMachineFactory.getStateMachine(machineId);
             machines.put(machineId, stateMachine);
         }
 
@@ -69,9 +64,9 @@ public class StateMachineServiceImpl
     }
 
     @NotNull
-    protected StateMachine<CashflowStates, CashflowEvents> restoreStateMachine(
-            @NotNull StateMachine<CashflowStates, CashflowEvents> stateMachine,
-            @Nullable StateMachineContext<CashflowStates, CashflowEvents> stateMachineContext) {
+    protected StateMachine<States, Events> restoreStateMachine(
+            @NotNull StateMachine<States, Events> stateMachine,
+            @Nullable StateMachineContext<States, Events> stateMachineContext) {
         if (stateMachineContext == null) {
             return stateMachine;
         }
@@ -83,9 +78,9 @@ public class StateMachineServiceImpl
 
     @NotNull
     @SneakyThrows
-    protected StateMachine<CashflowStates, CashflowEvents> handleStart(@NotNull StateMachine<CashflowStates, CashflowEvents> stateMachine) {
+    protected StateMachine<States, Events> handleStart(@NotNull StateMachine<States, Events> stateMachine) {
         if (!((Lifecycle) stateMachine).isRunning()) {
-            var listener = new StartListener(stateMachine);
+            var listener = new StartListener<>(stateMachine);
             stateMachine.addStateListener(listener);
             stateMachine.startReactively().block();
             listener.latch.await();
@@ -94,44 +89,44 @@ public class StateMachineServiceImpl
     }
 
     @SneakyThrows
-    protected void handleStop(@NotNull StateMachine<CashflowStates, CashflowEvents> stateMachine) {
+    protected void handleStop(@NotNull StateMachine<States, Events> stateMachine) {
         if (((Lifecycle) stateMachine).isRunning()) {
-            var listener = new StopListener(stateMachine);
+            var listener = new StopListener<>(stateMachine);
             stateMachine.addStateListener(listener);
             stateMachine.stopReactively().block();
             listener.latch.await();
         }
     }
 
-    private static class StartListener
-            extends StateMachineListenerAdapter<CashflowStates, CashflowEvents> {
+    private static class StartListener<States, Events>
+            extends StateMachineListenerAdapter<States, Events> {
 
         private final CountDownLatch latch = new CountDownLatch(1);
-        private final StateMachine<CashflowStates, CashflowEvents> stateMachine;
+        private final StateMachine<States, Events> stateMachine;
 
-        public StartListener(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
+        public StartListener(StateMachine<States, Events> stateMachine) {
             this.stateMachine = stateMachine;
         }
 
         @Override
-        public void stateMachineStarted(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
+        public void stateMachineStarted(StateMachine<States, Events> stateMachine) {
             this.stateMachine.removeStateListener(this);
             latch.countDown();
         }
     }
 
-    private static class StopListener
-            extends StateMachineListenerAdapter<CashflowStates, CashflowEvents> {
+    private static class StopListener<States, Events>
+            extends StateMachineListenerAdapter<States, Events> {
 
         private final CountDownLatch latch = new CountDownLatch(1);
-        private final StateMachine<CashflowStates, CashflowEvents> stateMachine;
+        private final StateMachine<States, Events> stateMachine;
 
-        public StopListener(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
+        public StopListener(StateMachine<States, Events> stateMachine) {
             this.stateMachine = stateMachine;
         }
 
         @Override
-        public void stateMachineStopped(StateMachine<CashflowStates, CashflowEvents> stateMachine) {
+        public void stateMachineStopped(StateMachine<States, Events> stateMachine) {
             this.stateMachine.removeStateListener(this);
             latch.countDown();
         }

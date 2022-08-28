@@ -1,4 +1,4 @@
-package ru.romanow.state.machine.models;
+package ru.romanow.state.machine.models.cashflow;
 
 public enum CashflowStates {
     CALCULATION_STARTED,       // Начальное состояние

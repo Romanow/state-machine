@@ -7,8 +7,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.AutoConfigureTestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,10 +16,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import ru.romanow.state.machine.config.DatabaseTestConfiguration;
 import ru.romanow.state.machine.domain.Calculation;
-import ru.romanow.state.machine.models.CashflowEvents;
-import ru.romanow.state.machine.models.CashflowStates;
+import ru.romanow.state.machine.models.cashflow.CashflowEvents;
+import ru.romanow.state.machine.models.cashflow.CashflowStates;
 import ru.romanow.state.machine.repostitory.CalculationRepository;
-import ru.romanow.state.machine.service.StateMachineServiceImpl;
+import ru.romanow.state.machine.service.cashflow.CashFlowStateMachineService;
 
 import static java.util.List.of;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +34,6 @@ import static ru.romanow.state.machine.domain.enums.CalculationType.CASH_FLOW;
 @Transactional
 @AutoConfigureTestEntityManager
 class StateMachineApplicationTest {
-    private static final Logger logger = LoggerFactory.getLogger(StateMachineApplicationTest.class);
 
     public static final UUID CALCULATION_UID_1 = UUID.fromString("639cb402-3ae4-4ff4-ab1a-d70eaa661334");
     public static final UUID CALCULATION_UID_2 = UUID.fromString("07dabafa-529d-4da4-bab5-a6359313c064");
@@ -45,7 +42,7 @@ class StateMachineApplicationTest {
     private CalculationRepository calculationRepository;
 
     @Autowired
-    private StateMachineServiceImpl stateMachineService;
+    private CashFlowStateMachineService stateMachineService;
 
     @BeforeEach
     void init() {
@@ -77,6 +74,7 @@ class StateMachineApplicationTest {
         var result = stateMachine
                 .sendEvent(just(message)).blockLast();
 
+        assertThat(result).isNotNull();
         assertThat(result.getResultType()).isEqualTo(ResultType.ACCEPTED);
         assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.DATA_COPIED_TO_STAGED);
     }
@@ -91,6 +89,7 @@ class StateMachineApplicationTest {
         var message = just(withPayload(CashflowEvents.ETL_COMPLETED_EVENT).build());
         var result = stateMachine.sendEvent(message).blockLast();
 
+        assertThat(result).isNotNull();
         assertThat(result.getResultType()).isEqualTo(ResultType.DENIED);
         assertThat(stateMachine.getState().getId()).isEqualTo(CashflowStates.CALCULATION_STARTED);
     }

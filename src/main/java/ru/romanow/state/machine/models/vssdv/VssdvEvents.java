@@ -1,6 +1,6 @@
-package ru.romanow.state.machine.models;
+package ru.romanow.state.machine.models.vssdv;
 
-public enum CashflowEvents {
+public enum VssdvEvents {
     DATA_PREPARED_EVENT,              // CALCULATION_STARTED (init) ->   DATA_PREPARED_EVENT
 
     DATA_COPIED_TO_STAGED_EVENT,      // DATA_PREPARED_EVENT        ->   DATA_COPIED_TO_STAGED
@@ -22,6 +22,6 @@ public enum CashflowEvents {
 
     DATA_COPIED_FROM_STAGED_EVENT,    // REVERSED_COMPLETED         ->   DATA_COPIED_FROM_STAGED
 
-    CALCULATION_FINISHED_EVENT,       // DATA_COPIED_FROM_STAGED    ->   CALCULATION_FINISHED (end)
-    CALCULATION_ERROR_EVENT           // Every State                ->   CALCULATION_ERROR (end)
+    CALCULATION_FINISHED_EVENT,
+    CALCULATION_ERROR_EVENT
 }

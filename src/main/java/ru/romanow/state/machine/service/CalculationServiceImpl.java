@@ -8,8 +8,9 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import ru.romanow.state.machine.models.CashflowEvents;
-import ru.romanow.state.machine.models.CashflowStates;
+import ru.romanow.state.machine.models.cashflow.CashflowEvents;
+import ru.romanow.state.machine.models.cashflow.CashflowStates;
+import ru.romanow.state.machine.service.cashflow.CashFlowStateMachineService;
 
 import static java.lang.Integer.toHexString;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -48,7 +49,7 @@ public class CalculationServiceImpl
         }
     };
 
-    private final StateMachineService stateMachineService;
+    private final CashFlowStateMachineService stateMachineService;
 
     @Override
     public String nextState(@NotNull UUID calculationUid) {

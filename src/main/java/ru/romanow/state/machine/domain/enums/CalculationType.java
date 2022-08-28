@@ -4,7 +4,8 @@ import org.jetbrains.annotations.NotNull;
 import ru.romanow.state.machine.domain.CalculationTypes;
 
 public enum CalculationType {
-    CASH_FLOW(CalculationTypes.CASHFLOW);
+    CASH_FLOW(CalculationTypes.CASHFLOW),
+    VSSDV(CalculationTypes.VSSDV);
 
     private final String value;
 

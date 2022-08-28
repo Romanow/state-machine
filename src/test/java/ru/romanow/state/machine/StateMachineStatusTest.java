@@ -16,12 +16,12 @@ import org.springframework.test.context.ActiveProfiles;
 import ru.romanow.state.machine.config.StateMachineConfiguration;
 import ru.romanow.state.machine.domain.Calculation;
 import ru.romanow.state.machine.domain.enums.CalculationType;
-import ru.romanow.state.machine.models.CashflowEvents;
-import ru.romanow.state.machine.models.CashflowStates;
+import ru.romanow.state.machine.models.cashflow.CashflowEvents;
+import ru.romanow.state.machine.models.cashflow.CashflowStates;
 import ru.romanow.state.machine.repostitory.CalculationRepository;
-import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
-import ru.romanow.state.machine.service.CustomStateMachinePersist;
-import ru.romanow.state.machine.service.StateMachineService;
+import ru.romanow.state.machine.repostitory.CashFlowCalculationStatusRepository;
+import ru.romanow.state.machine.service.cashflow.CashFlowCustomStateMachinePersist;
+import ru.romanow.state.machine.service.cashflow.CashFlowStateMachineService;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -38,10 +38,10 @@ public class StateMachineStatusTest {
     private CalculationRepository calculationRepository;
 
     @Autowired
-    private CalculationStatusRepository calculationStatusRepository;
+    private CashFlowCalculationStatusRepository calculationStatusRepository;
 
     @Autowired
-    private StateMachineService stateMachineService;
+    private CashFlowStateMachineService stateMachineService;
 
     @Test
     void testSuccess()
@@ -217,8 +217,8 @@ public class StateMachineStatusTest {
     static class TestConfiguration {
 
         @Bean
-        public CalculationStatusRepository calculationStatusRepository() {
-            return mock(CalculationStatusRepository.class);
+        public CashFlowCalculationStatusRepository calculationStatusRepository() {
+            return mock(CashFlowCalculationStatusRepository.class);
         }
 
         @Bean
@@ -228,7 +228,7 @@ public class StateMachineStatusTest {
 
         @Bean
         public StateMachineRuntimePersister<CashflowStates, CashflowEvents, String> stateMachinePersist() {
-            return new CustomStateMachinePersist(calculationRepository(), calculationStatusRepository());
+            return new CashFlowCustomStateMachinePersist(calculationRepository(), calculationStatusRepository());
         }
 
     }

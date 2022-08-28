@@ -2,14 +2,16 @@ package ru.romanow.state.machine.domain;
 
 import java.time.LocalDateTime;
 import javax.persistence.Column;
+import javax.persistence.DiscriminatorColumn;
+import javax.persistence.DiscriminatorType;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
 import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Inheritance;
+import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -21,7 +23,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-import ru.romanow.state.machine.models.CashflowStates;
 
 @Getter
 @Setter
@@ -29,15 +30,13 @@ import ru.romanow.state.machine.models.CashflowStates;
 @Entity
 @Table(name = "calculation_status")
 @EntityListeners(AuditingEntityListener.class)
-public class CalculationStatus {
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
+public abstract class CalculationStatus<T> {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
-    private CashflowStates status;
 
     @ManyToOne
     @JoinColumn(name = "calculation_id", foreignKey = @ForeignKey(name = "fk_calculation_status_calculation_id"))
@@ -46,6 +45,9 @@ public class CalculationStatus {
     @CreatedDate
     @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdDate;
+
+    @Column(nullable = false)
+    protected abstract T getStatus();
 
     @Override
     public boolean equals(Object o) {
@@ -60,7 +62,7 @@ public class CalculationStatus {
         final CalculationStatus that = (CalculationStatus) o;
 
         return new EqualsBuilder().append(id, that.id)
-                                  .append(status, that.status)
+                                  .append(getStatus(), that.getStatus())
                                   .append(createdDate, that.createdDate)
                                   .isEquals();
     }
@@ -68,7 +70,7 @@ public class CalculationStatus {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).append(id)
-                                          .append(status)
+                                          .append(getStatus())
                                           .append(createdDate)
                                           .toHashCode();
     }
@@ -77,7 +79,7 @@ public class CalculationStatus {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("id", id)
-                .append("status", status)
+                .append("status", getStatus())
                 .append("createdDate", createdDate)
                 .toString();
     }

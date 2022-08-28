@@ -1,42 +1,31 @@
 package ru.romanow.state.machine.config;
 
 import java.util.EnumSet;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
-import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.event.StateMachineEvent;
-import org.springframework.statemachine.persist.StateMachineRuntimePersister;
-import ru.romanow.state.machine.models.CashflowEvents;
-import ru.romanow.state.machine.models.CashflowStates;
-import ru.romanow.state.machine.service.StateMachineService;
-import ru.romanow.state.machine.service.StateMachineServiceImpl;
+import ru.romanow.state.machine.models.cashflow.CashflowEvents;
+import ru.romanow.state.machine.models.cashflow.CashflowStates;
+import ru.romanow.state.machine.models.vssdv.VssdvEvents;
+import ru.romanow.state.machine.models.vssdv.VssdvStates;
+import ru.romanow.state.machine.service.cashflow.CashFlowCustomStateMachinePersist;
+import ru.romanow.state.machine.service.vssdv.VssdvCustomStateMachinePersist;
 
 import static ru.romanow.state.machine.domain.CalculationTypes.CASHFLOW;
+import static ru.romanow.state.machine.domain.CalculationTypes.VSSDV;
 
 @Configuration
-@RequiredArgsConstructor
 public class StateMachineConfiguration {
     private static final Logger logger = LoggerFactory.getLogger(StateMachineConfiguration.class);
-
-    private final StateMachineRuntimePersister<CashflowStates, CashflowEvents, String> stateMachinePersist;
-
-    @Bean
-    @Autowired
-    public StateMachineService stateMachineService(
-            Map<String, StateMachineFactory<CashflowStates, CashflowEvents>> stateMachineFactories) {
-        return new StateMachineServiceImpl(stateMachinePersist, stateMachineFactories);
-    }
 
     @Bean
     public ApplicationListener<StateMachineEvent> stateMachineEventApplicationListener() {
@@ -46,8 +35,9 @@ public class StateMachineConfiguration {
     @Configuration
     @EnableStateMachineFactory(name = CASHFLOW)
     @RequiredArgsConstructor
-    class CashflowStateMachineConfiguration
+    static class CashflowStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<CashflowStates, CashflowEvents> {
+        private final CashFlowCustomStateMachinePersist cashFlowStateMachinePersist;
 
         @Override
         public void configure(StateMachineConfigurationConfigurer<CashflowStates, CashflowEvents> config)
@@ -57,7 +47,7 @@ public class StateMachineConfiguration {
                       .autoStartup(true)
                   .and()
                       .withPersistence()
-                      .runtimePersister(stateMachinePersist);
+                      .runtimePersister(cashFlowStateMachinePersist);
             // @formatter:on
         }
 
@@ -163,6 +153,52 @@ public class StateMachineConfiguration {
                         .source(state)
                         .target(CashflowStates.CALCULATION_ERROR)
                         .event(CashflowEvents.CALCULATION_ERROR_EVENT);
+            }
+        }
+    }
+
+    @Configuration
+    @EnableStateMachineFactory(name = VSSDV)
+    @RequiredArgsConstructor
+    static class VssdvStateMachineConfiguration
+            extends EnumStateMachineConfigurerAdapter<VssdvStates, VssdvEvents> {
+        private final VssdvCustomStateMachinePersist stateMachinePersist;
+
+        @Override
+        public void configure(StateMachineConfigurationConfigurer<VssdvStates, VssdvEvents> config)
+                throws Exception {
+            // @formatter:off
+            config.withConfiguration()
+                  .autoStartup(true)
+                  .and()
+                  .withPersistence()
+                  .runtimePersister(stateMachinePersist);
+            // @formatter:on
+        }
+
+        @Override
+        public void configure(StateMachineStateConfigurer<VssdvStates, VssdvEvents> states)
+                throws Exception {
+            states.withStates()
+                  .initial(VssdvStates.CALCULATION_STARTED)
+                  .end(VssdvStates.VSSDV_CALCULATION_FINISHED)
+                  .end(VssdvStates.CALCULATION_ERROR)
+                  .states(EnumSet.allOf(VssdvStates.class));
+        }
+
+        @Override
+        public void configure(StateMachineTransitionConfigurer<VssdvStates, VssdvEvents> transitions)
+                throws Exception {
+            // @formatter:off
+
+            // @formatter:on
+
+            for (var state : VssdvStates.values()) {
+                transitions
+                        .withExternal()
+                        .source(state)
+                        .target(VssdvStates.CALCULATION_ERROR)
+                        .event(VssdvEvents.CALCULATION_ERROR_EVENT);
             }
         }
     }
