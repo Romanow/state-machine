@@ -7,7 +7,6 @@ import ru.romanow.state.machine.domain.VssdvCalculationStatus;
 import ru.romanow.state.machine.models.vssdv.VssdvEvents;
 import ru.romanow.state.machine.models.vssdv.VssdvStates;
 import ru.romanow.state.machine.repostitory.VssdvCalculationStatusRepository;
-import ru.romanow.state.machine.service.BaseCustomStateMachinePersist;
 import ru.romanow.state.machine.service.BaseStateMachineService;
 
 @Service
@@ -15,9 +14,8 @@ public class VssdvStateMachineService
         extends BaseStateMachineService<VssdvStates, VssdvEvents, VssdvCalculationStatus, VssdvCalculationStatusRepository> {
 
     @Autowired
-    public VssdvStateMachineService(
-            BaseCustomStateMachinePersist<VssdvStates, VssdvEvents, VssdvCalculationStatus, VssdvCalculationStatusRepository> stateMachinePersist,
-            StateMachineFactory<VssdvStates, VssdvEvents> stateMachineFactory) {
-        super(stateMachinePersist, stateMachineFactory);
+    public VssdvStateMachineService(VssdvCustomStateMachinePersist vssdvCustomStateMachinePersist,
+                                    StateMachineFactory<VssdvStates, VssdvEvents> stateMachineFactory) {
+        super(vssdvCustomStateMachinePersist, stateMachineFactory);
     }
 }

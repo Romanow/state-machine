@@ -13,12 +13,15 @@ import org.springframework.statemachine.config.builders.StateMachineConfiguratio
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.event.StateMachineEvent;
+import ru.romanow.state.machine.domain.CashFlowCalculationStatus;
+import ru.romanow.state.machine.domain.VssdvCalculationStatus;
 import ru.romanow.state.machine.models.cashflow.CashflowEvents;
 import ru.romanow.state.machine.models.cashflow.CashflowStates;
 import ru.romanow.state.machine.models.vssdv.VssdvEvents;
 import ru.romanow.state.machine.models.vssdv.VssdvStates;
-import ru.romanow.state.machine.service.cashflow.CashFlowCustomStateMachinePersist;
-import ru.romanow.state.machine.service.vssdv.VssdvCustomStateMachinePersist;
+import ru.romanow.state.machine.repostitory.CashFlowCalculationStatusRepository;
+import ru.romanow.state.machine.repostitory.VssdvCalculationStatusRepository;
+import ru.romanow.state.machine.service.BaseCustomStateMachinePersist;
 
 import static ru.romanow.state.machine.domain.CalculationTypes.CASHFLOW;
 import static ru.romanow.state.machine.domain.CalculationTypes.VSSDV;
@@ -37,7 +40,7 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class CashflowStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<CashflowStates, CashflowEvents> {
-        private final CashFlowCustomStateMachinePersist cashFlowStateMachinePersist;
+        private final BaseCustomStateMachinePersist<CashflowStates, CashflowEvents, CashFlowCalculationStatus, CashFlowCalculationStatusRepository> cashFlowStateMachinePersist;
 
         @Override
         public void configure(StateMachineConfigurationConfigurer<CashflowStates, CashflowEvents> config)
@@ -162,7 +165,7 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class VssdvStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<VssdvStates, VssdvEvents> {
-        private final VssdvCustomStateMachinePersist stateMachinePersist;
+        private final BaseCustomStateMachinePersist<VssdvStates, VssdvEvents, VssdvCalculationStatus, VssdvCalculationStatusRepository> vssdvStateMachinePersist;
 
         @Override
         public void configure(StateMachineConfigurationConfigurer<VssdvStates, VssdvEvents> config)
@@ -172,7 +175,7 @@ public class StateMachineConfiguration {
                   .autoStartup(true)
                   .and()
                   .withPersistence()
-                  .runtimePersister(stateMachinePersist);
+                  .runtimePersister(vssdvStateMachinePersist);
             // @formatter:on
         }
 

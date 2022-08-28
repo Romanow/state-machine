@@ -22,7 +22,6 @@ import static java.util.UUID.fromString;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.data.domain.Pageable.ofSize;
 
-@Component
 @RequiredArgsConstructor
 public abstract class BaseCustomStateMachinePersist<States, Events, CS extends CalculationStatus<States>, REPO extends CalculationStatusRepository<States, CS>>
         extends AbstractPersistingStateMachineInterceptor<States, Events, String>
