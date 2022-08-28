@@ -29,7 +29,7 @@ $ psql -h localhost -p 5432 -U program services
 
 services=> INSERT INTO calculation (uid, name, type, created_date, modified_date)
            VALUES ('0df50a2c-45ef-45ff-b2c3-9f5c58e3e814', 'Calculation 1', 'CASH_FLOW', NOW(), NOW()),
-                  ('ef8ac5ac-77dd-48f8-ad9c-5b4496f05dc3', 'Calculation 2', 'CASH_FLOW', NOW(), NOW());
+                  ('ef8ac5ac-77dd-48f8-ad9c-5b4496f05dc3', 'Calculation 2', 'VSSDV', NOW(), NOW());
 ```
 
 Тестирование:

@@ -3,31 +3,39 @@ package ru.romanow.state.machine.models.vssdv;
 public enum VssdvStates {
     CALCULATION_STARTED,
 
-    VAR_DATA_PREPARED,
-    VAR_DATA_COPIED_TO_STAGED,
+    // region Var Model
+    // #################################
+    // ########### VaR Model ###########
+    // #################################
+    VAR_MODEL_DATA_PREPARED,
+    VAR_MODEL_DATA_COPIED_TO_STAGED,
 
     // ETL
-    VAR_ETL_START,
-    VAR_ETL_SEND_TO_DRP,
-    VAR_ETL_ACCEPTED,
-    VAR_ETL_COMPLETED,
+    VAR_MODEL_ETL_START,
+    VAR_MODEL_ETL_SEND_TO_DRP,
+    VAR_MODEL_ETL_ACCEPTED,
+    VAR_MODEL_ETL_COMPLETED,
 
     // Calculation
-    VAR_CALCULATION_START,
-    VAR_CALCULATION_SENT_TO_DRP,
-    VAR_CALCULATION_ACCEPTED,
-    VAR_CALCULATION_COMPLETED,
+    VAR_MODEL_CALCULATION_START,
+    VAR_MODEL_CALCULATION_SENT_TO_DRP,
+    VAR_MODEL_CALCULATION_ACCEPTED,
+    VAR_MODEL_CALCULATION_COMPLETED,
 
     // Reverse ETL
-    VAR_REVERSED_ETL_START,
-    VAR_REVERSED_ETL_SENT_TO_DRP,
-    VAR_REVERSED_ETL_ACCEPTED,
-    VAR_REVERSED_COMPLETED,
+    VAR_MODEL_REVERSED_ETL_START,
+    VAR_MODEL_REVERSED_ETL_SENT_TO_DRP,
+    VAR_MODEL_REVERSED_ETL_ACCEPTED,
+    VAR_MODEL_REVERSED_COMPLETED,
 
-    VAR_DATA_COPIED_FROM_STAGED,
+    VAR_MODEL_DATA_COPIED_FROM_STAGED,
+    VAR_MODEL_CALCULATION_FINISHED,
+    // endregion
 
-    VAR_CALCULATION_FINISHED,
-
+    // region Black Model
+    // #################################
+    // ########## Black Model ##########
+    // #################################
     BLACK_MODEL_DATA_PREPARED,
     BLACK_MODEL_DATA_COPIED_TO_STAGED,
 
@@ -50,9 +58,13 @@ public enum VssdvStates {
     BLACK_MODEL_REVERSED_COMPLETED,
 
     BLACK_MODEL_DATA_COPIED_FROM_STAGED,
-
     BLACK_MODEL_CALCULATION_FINISHED,
+    // endregion
 
+    // region VSSDV
+    // #################################
+    // ############ VSSDV ##############
+    // #################################
     VSSDV_DATA_PREPARED,
     VSSDV_DATA_COPIED_TO_STAGED,
 
@@ -75,8 +87,8 @@ public enum VssdvStates {
     VSSDV_REVERSED_COMPLETED,
 
     VSSDV_DATA_COPIED_FROM_STAGED,
-
     VSSDV_CALCULATION_FINISHED,
+    // endregion
 
-    CALCULATION_ERROR          // Расчет завершился с ошибкой
+    CALCULATION_ERROR
 }

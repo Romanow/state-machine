@@ -39,7 +39,7 @@ public abstract class BaseStateMachineService<States, Events, CS extends Calcula
     @NotNull
     @Override
     @SneakyThrows
-    public StateMachine<States, Events> acquireStateMachine(@NotNull String type, @NotNull String machineId) {
+    public StateMachine<States, Events> acquireStateMachine(@NotNull String machineId) {
         logger.info("Acquiring StateMachine with ID '{}'", machineId);
 
         var stateMachine = machines.get(machineId);

@@ -1,6 +1,6 @@
 package ru.romanow.state.machine.models.cashflow;
 
-public enum CashflowStates {
+public enum CashFlowStates {
     CALCULATION_STARTED,       // Начальное состояние
 
     DATA_PREPARED,             // Выполнены условия для старта расчета

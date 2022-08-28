@@ -8,7 +8,7 @@ import javax.persistence.Enumerated;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import ru.romanow.state.machine.models.cashflow.CashflowStates;
+import ru.romanow.state.machine.models.cashflow.CashFlowStates;
 
 @Getter
 @Setter
@@ -16,17 +16,17 @@ import ru.romanow.state.machine.models.cashflow.CashflowStates;
 @Entity
 @DiscriminatorValue(CalculationTypes.CASHFLOW)
 public class CashFlowCalculationStatus
-        extends CalculationStatus<CashflowStates> {
+        extends CalculationStatus<CashFlowStates> {
 
     public CashFlowCalculationStatus() {
     }
 
-    public CashFlowCalculationStatus(CashflowStates status) {
+    public CashFlowCalculationStatus(CashFlowStates status) {
         this.status = status;
     }
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private CashflowStates status;
+    private CashFlowStates status;
 
 }

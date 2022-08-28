@@ -6,7 +6,7 @@ import org.springframework.statemachine.StateMachine;
 public interface StateMachineService<States, Events> {
 
     @NotNull
-    StateMachine<States, Events> acquireStateMachine(@NotNull String type, @NotNull String machineId);
+    StateMachine<States, Events> acquireStateMachine(@NotNull String machineId);
 
     void releaseStateMachine(@NotNull String machineId);
 }

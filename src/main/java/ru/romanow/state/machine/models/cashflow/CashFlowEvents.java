@@ -1,6 +1,6 @@
 package ru.romanow.state.machine.models.cashflow;
 
-public enum CashflowEvents {
+public enum CashFlowEvents {
     DATA_PREPARED_EVENT,              // CALCULATION_STARTED (init) ->   DATA_PREPARED_EVENT
 
     DATA_COPIED_TO_STAGED_EVENT,      // DATA_PREPARED_EVENT        ->   DATA_COPIED_TO_STAGED

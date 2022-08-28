@@ -1,6 +1,5 @@
 package ru.romanow.state.machine.config;
 
-import java.util.EnumSet;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,16 +12,20 @@ import org.springframework.statemachine.config.builders.StateMachineConfiguratio
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
 import org.springframework.statemachine.config.builders.StateMachineTransitionConfigurer;
 import org.springframework.statemachine.event.StateMachineEvent;
+import org.springframework.statemachine.listener.StateMachineListenerAdapter;
+import org.springframework.statemachine.state.State;
 import ru.romanow.state.machine.domain.CashFlowCalculationStatus;
 import ru.romanow.state.machine.domain.VssdvCalculationStatus;
-import ru.romanow.state.machine.models.cashflow.CashflowEvents;
-import ru.romanow.state.machine.models.cashflow.CashflowStates;
+import ru.romanow.state.machine.models.cashflow.CashFlowEvents;
+import ru.romanow.state.machine.models.cashflow.CashFlowStates;
 import ru.romanow.state.machine.models.vssdv.VssdvEvents;
 import ru.romanow.state.machine.models.vssdv.VssdvStates;
 import ru.romanow.state.machine.repostitory.CashFlowCalculationStatusRepository;
 import ru.romanow.state.machine.repostitory.VssdvCalculationStatusRepository;
 import ru.romanow.state.machine.service.BaseCustomStateMachinePersist;
 
+import static java.util.EnumSet.allOf;
+import static java.util.stream.Collectors.toSet;
 import static ru.romanow.state.machine.domain.CalculationTypes.CASHFLOW;
 import static ru.romanow.state.machine.domain.CalculationTypes.VSSDV;
 
@@ -39,11 +42,11 @@ public class StateMachineConfiguration {
     @EnableStateMachineFactory(name = CASHFLOW)
     @RequiredArgsConstructor
     static class CashflowStateMachineConfiguration
-            extends EnumStateMachineConfigurerAdapter<CashflowStates, CashflowEvents> {
-        private final BaseCustomStateMachinePersist<CashflowStates, CashflowEvents, CashFlowCalculationStatus, CashFlowCalculationStatusRepository> cashFlowStateMachinePersist;
+            extends EnumStateMachineConfigurerAdapter<CashFlowStates, CashFlowEvents> {
+        private final BaseCustomStateMachinePersist<CashFlowStates, CashFlowEvents, CashFlowCalculationStatus, CashFlowCalculationStatusRepository> cashFlowStateMachinePersist;
 
         @Override
-        public void configure(StateMachineConfigurationConfigurer<CashflowStates, CashflowEvents> config)
+        public void configure(StateMachineConfigurationConfigurer<CashFlowStates, CashFlowEvents> config)
                 throws Exception {
             // @formatter:off
             config.withConfiguration()
@@ -55,107 +58,107 @@ public class StateMachineConfiguration {
         }
 
         @Override
-        public void configure(StateMachineStateConfigurer<CashflowStates, CashflowEvents> states)
+        public void configure(StateMachineStateConfigurer<CashFlowStates, CashFlowEvents> states)
                 throws Exception {
             states.withStates()
-                  .initial(CashflowStates.CALCULATION_STARTED)
-                  .end(CashflowStates.CALCULATION_FINISHED)
-                  .end(CashflowStates.CALCULATION_ERROR)
-                  .states(EnumSet.allOf(CashflowStates.class));
+                  .initial(CashFlowStates.CALCULATION_STARTED)
+                  .end(CashFlowStates.CALCULATION_FINISHED)
+                  .end(CashFlowStates.CALCULATION_ERROR)
+                  .states(allOf(CashFlowStates.class));
         }
 
         @Override
-        public void configure(StateMachineTransitionConfigurer<CashflowStates, CashflowEvents> transitions)
+        public void configure(StateMachineTransitionConfigurer<CashFlowStates, CashFlowEvents> transitions)
                 throws Exception {
             // @formatter:off
             transitions
                 .withExternal()
-                    .source(CashflowStates.CALCULATION_STARTED)
-                    .target(CashflowStates.DATA_PREPARED)
-                    .event(CashflowEvents.DATA_PREPARED_EVENT)
+                    .source(CashFlowStates.CALCULATION_STARTED)
+                    .target(CashFlowStates.DATA_PREPARED)
+                    .event(CashFlowEvents.DATA_PREPARED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.DATA_PREPARED)
-                    .target(CashflowStates.DATA_COPIED_TO_STAGED)
-                    .event(CashflowEvents.DATA_COPIED_TO_STAGED_EVENT)
+                    .source(CashFlowStates.DATA_PREPARED)
+                    .target(CashFlowStates.DATA_COPIED_TO_STAGED)
+                    .event(CashFlowEvents.DATA_COPIED_TO_STAGED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.DATA_COPIED_TO_STAGED)
-                    .target(CashflowStates.ETL_START)
-                    .event(CashflowEvents.ETL_START_EVENT)
+                    .source(CashFlowStates.DATA_COPIED_TO_STAGED)
+                    .target(CashFlowStates.ETL_START)
+                    .event(CashFlowEvents.ETL_START_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.ETL_START)
-                    .target(CashflowStates.ETL_SEND_TO_DRP)
-                    .event(CashflowEvents.ETL_SENT_TO_DRP_EVENT)
+                    .source(CashFlowStates.ETL_START)
+                    .target(CashFlowStates.ETL_SEND_TO_DRP)
+                    .event(CashFlowEvents.ETL_SENT_TO_DRP_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.ETL_SEND_TO_DRP)
-                    .target(CashflowStates.ETL_ACCEPTED)
-                    .event(CashflowEvents.ETL_ACCEPTED_EVENT)
+                    .source(CashFlowStates.ETL_SEND_TO_DRP)
+                    .target(CashFlowStates.ETL_ACCEPTED)
+                    .event(CashFlowEvents.ETL_ACCEPTED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.ETL_ACCEPTED)
-                    .target(CashflowStates.ETL_COMPLETED)
-                    .event(CashflowEvents.ETL_COMPLETED_EVENT)
+                    .source(CashFlowStates.ETL_ACCEPTED)
+                    .target(CashFlowStates.ETL_COMPLETED)
+                    .event(CashFlowEvents.ETL_COMPLETED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.ETL_COMPLETED)
-                    .target(CashflowStates.CALCULATION_START)
-                    .event(CashflowEvents.CALCULATION_START_EVENT)
+                    .source(CashFlowStates.ETL_COMPLETED)
+                    .target(CashFlowStates.CALCULATION_START)
+                    .event(CashFlowEvents.CALCULATION_START_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.CALCULATION_START)
-                    .target(CashflowStates.CALCULATION_SENT_TO_DRP)
-                    .event(CashflowEvents.CALCULATION_SENT_TO_DRP_EVENT)
+                    .source(CashFlowStates.CALCULATION_START)
+                    .target(CashFlowStates.CALCULATION_SENT_TO_DRP)
+                    .event(CashFlowEvents.CALCULATION_SENT_TO_DRP_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.CALCULATION_SENT_TO_DRP)
-                    .target(CashflowStates.CALCULATION_ACCEPTED)
-                    .event(CashflowEvents.CALCULATION_ACCEPTED_EVENT)
+                    .source(CashFlowStates.CALCULATION_SENT_TO_DRP)
+                    .target(CashFlowStates.CALCULATION_ACCEPTED)
+                    .event(CashFlowEvents.CALCULATION_ACCEPTED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.CALCULATION_ACCEPTED)
-                    .target(CashflowStates.CALCULATION_COMPLETED)
-                    .event(CashflowEvents.CALCULATION_COMPLETED_EVENT)
+                    .source(CashFlowStates.CALCULATION_ACCEPTED)
+                    .target(CashFlowStates.CALCULATION_COMPLETED)
+                    .event(CashFlowEvents.CALCULATION_COMPLETED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.CALCULATION_COMPLETED)
-                    .target(CashflowStates.REVERSED_ETL_START)
-                    .event(CashflowEvents.REVERSED_ETL_START_EVENT)
+                    .source(CashFlowStates.CALCULATION_COMPLETED)
+                    .target(CashFlowStates.REVERSED_ETL_START)
+                    .event(CashFlowEvents.REVERSED_ETL_START_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.REVERSED_ETL_START)
-                    .target(CashflowStates.REVERSED_ETL_SENT_TO_DRP)
-                    .event(CashflowEvents.REVERSED_ETL_SENT_TO_DRP_EVENT)
+                    .source(CashFlowStates.REVERSED_ETL_START)
+                    .target(CashFlowStates.REVERSED_ETL_SENT_TO_DRP)
+                    .event(CashFlowEvents.REVERSED_ETL_SENT_TO_DRP_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.REVERSED_ETL_SENT_TO_DRP)
-                    .target(CashflowStates.REVERSED_ETL_ACCEPTED)
-                    .event(CashflowEvents.REVERSED_ETL_ACCEPTED_EVENT)
+                    .source(CashFlowStates.REVERSED_ETL_SENT_TO_DRP)
+                    .target(CashFlowStates.REVERSED_ETL_ACCEPTED)
+                    .event(CashFlowEvents.REVERSED_ETL_ACCEPTED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.REVERSED_ETL_ACCEPTED)
-                    .target(CashflowStates.REVERSED_COMPLETED)
-                    .event(CashflowEvents.REVERSED_COMPLETED_EVENT)
+                    .source(CashFlowStates.REVERSED_ETL_ACCEPTED)
+                    .target(CashFlowStates.REVERSED_COMPLETED)
+                    .event(CashFlowEvents.REVERSED_COMPLETED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.REVERSED_COMPLETED)
-                    .target(CashflowStates.DATA_COPIED_FROM_STAGED)
-                    .event(CashflowEvents.DATA_COPIED_FROM_STAGED_EVENT)
+                    .source(CashFlowStates.REVERSED_COMPLETED)
+                    .target(CashFlowStates.DATA_COPIED_FROM_STAGED)
+                    .event(CashFlowEvents.DATA_COPIED_FROM_STAGED_EVENT)
                 .and()
                 .withExternal()
-                    .source(CashflowStates.DATA_COPIED_FROM_STAGED)
-                    .target(CashflowStates.CALCULATION_FINISHED)
-                    .event(CashflowEvents.CALCULATION_FINISHED_EVENT);
+                    .source(CashFlowStates.DATA_COPIED_FROM_STAGED)
+                    .target(CashFlowStates.CALCULATION_FINISHED)
+                    .event(CashFlowEvents.CALCULATION_FINISHED_EVENT);
             // @formatter:on
 
-            for (var state : CashflowStates.values()) {
+            for (var state : CashFlowStates.values()) {
                 transitions
                         .withExternal()
                         .source(state)
-                        .target(CashflowStates.CALCULATION_ERROR)
-                        .event(CashflowEvents.CALCULATION_ERROR_EVENT);
+                        .target(CashFlowStates.CALCULATION_ERROR)
+                        .event(CashFlowEvents.CALCULATION_ERROR_EVENT);
             }
         }
     }
@@ -167,12 +170,21 @@ public class StateMachineConfiguration {
             extends EnumStateMachineConfigurerAdapter<VssdvStates, VssdvEvents> {
         private final BaseCustomStateMachinePersist<VssdvStates, VssdvEvents, VssdvCalculationStatus, VssdvCalculationStatusRepository> vssdvStateMachinePersist;
 
+        public static class StateMachineListener
+                extends StateMachineListenerAdapter<VssdvStates, VssdvEvents> {
+            @Override
+            public void stateChanged(State<VssdvStates, VssdvEvents> from, State<VssdvStates, VssdvEvents> to) {
+                logger.info("State changed from {} to: {}", from.getIds(), to.getIds());
+            }
+        }
+
         @Override
         public void configure(StateMachineConfigurationConfigurer<VssdvStates, VssdvEvents> config)
                 throws Exception {
             // @formatter:off
             config.withConfiguration()
                   .autoStartup(true)
+                  .listener(new StateMachineListener())
                   .and()
                   .withPersistence()
                   .runtimePersister(vssdvStateMachinePersist);
@@ -182,18 +194,290 @@ public class StateMachineConfiguration {
         @Override
         public void configure(StateMachineStateConfigurer<VssdvStates, VssdvEvents> states)
                 throws Exception {
+            // @formatter:off
             states.withStates()
-                  .initial(VssdvStates.CALCULATION_STARTED)
-                  .end(VssdvStates.VSSDV_CALCULATION_FINISHED)
-                  .end(VssdvStates.CALCULATION_ERROR)
-                  .states(EnumSet.allOf(VssdvStates.class));
+                      .initial(VssdvStates.CALCULATION_STARTED)
+                      .fork(VssdvStates.CALCULATION_STARTED)
+                      .join(VssdvStates.VSSDV_CALCULATION_START)
+                      .states(allOf(VssdvStates.class)
+                                      .stream()
+                                      .filter(s -> s.name().startsWith("VSSDV_"))
+                                      .collect(toSet()))
+                      .end(VssdvStates.VSSDV_CALCULATION_FINISHED)
+                      .end(VssdvStates.CALCULATION_ERROR)
+                  .and()
+                  .withStates()
+                      .parent(VssdvStates.CALCULATION_STARTED)
+                      .initial(VssdvStates.VAR_MODEL_DATA_PREPARED)
+                      .end(VssdvStates.VAR_MODEL_CALCULATION_FINISHED)
+                      .states(allOf(VssdvStates.class)
+                                      .stream()
+                                      .filter(s -> s.name().startsWith("VAR_MODEL_"))
+                                      .collect(toSet()))
+                  .and()
+                  .withStates()
+                      .parent(VssdvStates.CALCULATION_STARTED)
+                      .initial(VssdvStates.BLACK_MODEL_DATA_PREPARED)
+                      .end(VssdvStates.BLACK_MODEL_CALCULATION_FINISHED)
+                      .states(allOf(VssdvStates.class)
+                                      .stream()
+                                      .filter(s -> s.name().startsWith("BLACK_MODEL_"))
+                                      .collect(toSet()));
+            // @formatter:on
         }
 
         @Override
         public void configure(StateMachineTransitionConfigurer<VssdvStates, VssdvEvents> transitions)
                 throws Exception {
             // @formatter:off
+            // region Var Model
+            transitions
+                    .withFork()
+                        .source(VssdvStates.CALCULATION_STARTED)
+                        .target(VssdvStates.VAR_MODEL_DATA_PREPARED)
+                        .target(VssdvStates.BLACK_MODEL_DATA_PREPARED)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_DATA_PREPARED)
+                        .target(VssdvStates.VAR_MODEL_DATA_COPIED_TO_STAGED)
+                        .event(VssdvEvents.VAR_MODEL_DATA_COPIED_TO_STAGED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_DATA_COPIED_TO_STAGED)
+                        .target(VssdvStates.VAR_MODEL_ETL_START)
+                        .event(VssdvEvents.VAR_MODEL_ETL_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_ETL_START)
+                        .target(VssdvStates.VAR_MODEL_ETL_SEND_TO_DRP)
+                        .event(VssdvEvents.VAR_MODEL_ETL_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_ETL_SEND_TO_DRP)
+                        .target(VssdvStates.VAR_MODEL_ETL_ACCEPTED)
+                        .event(VssdvEvents.VAR_MODEL_ETL_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_ETL_ACCEPTED)
+                        .target(VssdvStates.VAR_MODEL_ETL_COMPLETED)
+                        .event(VssdvEvents.VAR_MODEL_ETL_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_ETL_COMPLETED)
+                        .target(VssdvStates.VAR_MODEL_CALCULATION_START)
+                        .event(VssdvEvents.VAR_MODEL_CALCULATION_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_CALCULATION_START)
+                        .target(VssdvStates.VAR_MODEL_CALCULATION_SENT_TO_DRP)
+                        .event(VssdvEvents.VAR_MODEL_CALCULATION_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_CALCULATION_SENT_TO_DRP)
+                        .target(VssdvStates.VAR_MODEL_CALCULATION_ACCEPTED)
+                        .event(VssdvEvents.VAR_MODEL_CALCULATION_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_CALCULATION_ACCEPTED)
+                        .target(VssdvStates.VAR_MODEL_CALCULATION_COMPLETED)
+                        .event(VssdvEvents.VAR_MODEL_CALCULATION_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_CALCULATION_COMPLETED)
+                        .target(VssdvStates.VAR_MODEL_REVERSED_ETL_START)
+                        .event(VssdvEvents.VAR_MODEL_REVERSED_ETL_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_REVERSED_ETL_START)
+                        .target(VssdvStates.VAR_MODEL_REVERSED_ETL_SENT_TO_DRP)
+                        .event(VssdvEvents.VAR_MODEL_REVERSED_ETL_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_REVERSED_ETL_SENT_TO_DRP)
+                        .target(VssdvStates.VAR_MODEL_REVERSED_ETL_ACCEPTED)
+                        .event(VssdvEvents.VAR_MODEL_REVERSED_ETL_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_REVERSED_ETL_ACCEPTED)
+                        .target(VssdvStates.VAR_MODEL_REVERSED_COMPLETED)
+                        .event(VssdvEvents.VAR_MODEL_REVERSED_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_REVERSED_COMPLETED)
+                        .target(VssdvStates.VAR_MODEL_DATA_COPIED_FROM_STAGED)
+                        .event(VssdvEvents.VAR_MODEL_DATA_COPIED_FROM_STAGED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_DATA_COPIED_FROM_STAGED)
+                        .target(VssdvStates.VAR_MODEL_CALCULATION_FINISHED)
+                        .event(VssdvEvents.VAR_MODEL_CALCULATION_FINISHED_EVENT);
+            // endregion
+            
+            // region Black Model
+            transitions
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_DATA_PREPARED)
+                        .target(VssdvStates.BLACK_MODEL_DATA_COPIED_TO_STAGED)
+                        .event(VssdvEvents.BLACK_MODEL_DATA_COPIED_TO_STAGED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_DATA_COPIED_TO_STAGED)
+                        .target(VssdvStates.BLACK_MODEL_ETL_START)
+                        .event(VssdvEvents.BLACK_MODEL_ETL_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_ETL_START)
+                        .target(VssdvStates.BLACK_MODEL_ETL_SEND_TO_DRP)
+                        .event(VssdvEvents.BLACK_MODEL_ETL_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_ETL_SEND_TO_DRP)
+                        .target(VssdvStates.BLACK_MODEL_ETL_ACCEPTED)
+                        .event(VssdvEvents.BLACK_MODEL_ETL_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_ETL_ACCEPTED)
+                        .target(VssdvStates.BLACK_MODEL_ETL_COMPLETED)
+                        .event(VssdvEvents.BLACK_MODEL_ETL_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_ETL_COMPLETED)
+                        .target(VssdvStates.BLACK_MODEL_CALCULATION_START)
+                        .event(VssdvEvents.BLACK_MODEL_CALCULATION_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_CALCULATION_START)
+                        .target(VssdvStates.BLACK_MODEL_CALCULATION_SENT_TO_DRP)
+                        .event(VssdvEvents.BLACK_MODEL_CALCULATION_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_CALCULATION_SENT_TO_DRP)
+                        .target(VssdvStates.BLACK_MODEL_CALCULATION_ACCEPTED)
+                        .event(VssdvEvents.BLACK_MODEL_CALCULATION_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_CALCULATION_ACCEPTED)
+                        .target(VssdvStates.BLACK_MODEL_CALCULATION_COMPLETED)
+                        .event(VssdvEvents.BLACK_MODEL_CALCULATION_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_CALCULATION_COMPLETED)
+                        .target(VssdvStates.BLACK_MODEL_REVERSED_ETL_START)
+                        .event(VssdvEvents.BLACK_MODEL_REVERSED_ETL_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_REVERSED_ETL_START)
+                        .target(VssdvStates.BLACK_MODEL_REVERSED_ETL_SENT_TO_DRP)
+                        .event(VssdvEvents.BLACK_MODEL_REVERSED_ETL_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_REVERSED_ETL_SENT_TO_DRP)
+                        .target(VssdvStates.BLACK_MODEL_REVERSED_ETL_ACCEPTED)
+                        .event(VssdvEvents.BLACK_MODEL_REVERSED_ETL_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_REVERSED_ETL_ACCEPTED)
+                        .target(VssdvStates.BLACK_MODEL_REVERSED_COMPLETED)
+                        .event(VssdvEvents.BLACK_MODEL_REVERSED_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_REVERSED_COMPLETED)
+                        .target(VssdvStates.BLACK_MODEL_DATA_COPIED_FROM_STAGED)
+                        .event(VssdvEvents.BLACK_MODEL_DATA_COPIED_FROM_STAGED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_DATA_COPIED_FROM_STAGED)
+                        .target(VssdvStates.BLACK_MODEL_CALCULATION_FINISHED)
+                        .event(VssdvEvents.BLACK_MODEL_CALCULATION_FINISHED_EVENT);
+            // endregion
 
+            // region Black Model
+            transitions
+                    .withJoin()
+                        .source(VssdvStates.VAR_MODEL_CALCULATION_FINISHED)
+                        .source(VssdvStates.BLACK_MODEL_CALCULATION_FINISHED)
+                        .target(VssdvStates.VSSDV_CALCULATION_START)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_CALCULATION_START)
+                        .target(VssdvStates.VSSDV_DATA_PREPARED)
+                        .event(VssdvEvents.VSSDV_DATA_PREPARED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_DATA_PREPARED)
+                        .target(VssdvStates.VSSDV_DATA_COPIED_TO_STAGED)
+                        .event(VssdvEvents.VSSDV_DATA_COPIED_TO_STAGED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_DATA_COPIED_TO_STAGED)
+                        .target(VssdvStates.VSSDV_ETL_START)
+                        .event(VssdvEvents.VSSDV_ETL_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_ETL_START)
+                        .target(VssdvStates.VSSDV_ETL_SEND_TO_DRP)
+                        .event(VssdvEvents.VSSDV_ETL_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_ETL_SEND_TO_DRP)
+                        .target(VssdvStates.VSSDV_ETL_ACCEPTED)
+                        .event(VssdvEvents.VSSDV_ETL_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_ETL_ACCEPTED)
+                        .target(VssdvStates.VSSDV_ETL_COMPLETED)
+                        .event(VssdvEvents.VSSDV_ETL_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_ETL_COMPLETED)
+                        .target(VssdvStates.VSSDV_CALCULATION_START)
+                        .event(VssdvEvents.VSSDV_CALCULATION_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_CALCULATION_START)
+                        .target(VssdvStates.VSSDV_CALCULATION_SENT_TO_DRP)
+                        .event(VssdvEvents.VSSDV_CALCULATION_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_CALCULATION_SENT_TO_DRP)
+                        .target(VssdvStates.VSSDV_CALCULATION_ACCEPTED)
+                        .event(VssdvEvents.VSSDV_CALCULATION_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_CALCULATION_ACCEPTED)
+                        .target(VssdvStates.VSSDV_CALCULATION_COMPLETED)
+                        .event(VssdvEvents.VSSDV_CALCULATION_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_CALCULATION_COMPLETED)
+                        .target(VssdvStates.VSSDV_REVERSED_ETL_START)
+                        .event(VssdvEvents.VSSDV_REVERSED_ETL_START_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_REVERSED_ETL_START)
+                        .target(VssdvStates.VSSDV_REVERSED_ETL_SENT_TO_DRP)
+                        .event(VssdvEvents.VSSDV_REVERSED_ETL_SENT_TO_DRP_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_REVERSED_ETL_SENT_TO_DRP)
+                        .target(VssdvStates.VSSDV_REVERSED_ETL_ACCEPTED)
+                        .event(VssdvEvents.VSSDV_REVERSED_ETL_ACCEPTED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_REVERSED_ETL_ACCEPTED)
+                        .target(VssdvStates.VSSDV_REVERSED_COMPLETED)
+                        .event(VssdvEvents.VSSDV_REVERSED_COMPLETED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_REVERSED_COMPLETED)
+                        .target(VssdvStates.VSSDV_DATA_COPIED_FROM_STAGED)
+                        .event(VssdvEvents.VSSDV_DATA_COPIED_FROM_STAGED_EVENT)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_DATA_COPIED_FROM_STAGED)
+                        .target(VssdvStates.VSSDV_CALCULATION_FINISHED)
+                        .event(VssdvEvents.VSSDV_CALCULATION_FINISHED_EVENT);
+            // endregion
             // @formatter:on
 
             for (var state : VssdvStates.values()) {

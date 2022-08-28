@@ -1,69 +1,176 @@
 package ru.romanow.state.machine.service;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.statemachine.StateMachineEventResult.ResultType;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
-import ru.romanow.state.machine.models.cashflow.CashflowEvents;
-import ru.romanow.state.machine.models.cashflow.CashflowStates;
+import ru.romanow.state.machine.domain.enums.CalculationType;
+import ru.romanow.state.machine.models.cashflow.CashFlowEvents;
+import ru.romanow.state.machine.models.cashflow.CashFlowStates;
+import ru.romanow.state.machine.models.vssdv.VssdvEvents;
+import ru.romanow.state.machine.models.vssdv.VssdvStates;
 import ru.romanow.state.machine.service.cashflow.CashFlowStateMachineService;
+import ru.romanow.state.machine.service.vssdv.VssdvStateMachineService;
 
 import static java.lang.Integer.toHexString;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.messaging.support.MessageBuilder.withPayload;
-import static ru.romanow.state.machine.domain.enums.CalculationType.CASH_FLOW;
+import static reactor.core.publisher.Mono.just;
 
 @Service
-@RequiredArgsConstructor
 public class CalculationServiceImpl
         implements CalculationService {
 
     private static final Logger logger = getLogger(CalculationServiceImpl.class);
 
-    private static final Map<CashflowStates, CashflowEvents> NEXT_STATE_EVENT = new HashMap<>() {
+    private static final Map<CashFlowStates, CashFlowEvents> CASH_FLOW_NEXT_STATE_EVENT = new HashMap<>() {
         {
-            put(CashflowStates.CALCULATION_STARTED, CashflowEvents.DATA_PREPARED_EVENT);
-            put(CashflowStates.DATA_PREPARED, CashflowEvents.DATA_COPIED_TO_STAGED_EVENT);
-            put(CashflowStates.DATA_COPIED_TO_STAGED, CashflowEvents.ETL_START_EVENT);
+            put(CashFlowStates.CALCULATION_STARTED, CashFlowEvents.DATA_PREPARED_EVENT);
+            put(CashFlowStates.DATA_PREPARED, CashFlowEvents.DATA_COPIED_TO_STAGED_EVENT);
+            put(CashFlowStates.DATA_COPIED_TO_STAGED, CashFlowEvents.ETL_START_EVENT);
 
-            put(CashflowStates.ETL_START, CashflowEvents.ETL_SENT_TO_DRP_EVENT);
-            put(CashflowStates.ETL_SEND_TO_DRP, CashflowEvents.ETL_ACCEPTED_EVENT);
-            put(CashflowStates.ETL_ACCEPTED, CashflowEvents.ETL_COMPLETED_EVENT);
-            put(CashflowStates.ETL_COMPLETED, CashflowEvents.CALCULATION_START_EVENT);
+            put(CashFlowStates.ETL_START, CashFlowEvents.ETL_SENT_TO_DRP_EVENT);
+            put(CashFlowStates.ETL_SEND_TO_DRP, CashFlowEvents.ETL_ACCEPTED_EVENT);
+            put(CashFlowStates.ETL_ACCEPTED, CashFlowEvents.ETL_COMPLETED_EVENT);
+            put(CashFlowStates.ETL_COMPLETED, CashFlowEvents.CALCULATION_START_EVENT);
 
-            put(CashflowStates.CALCULATION_START, CashflowEvents.CALCULATION_SENT_TO_DRP_EVENT);
-            put(CashflowStates.CALCULATION_SENT_TO_DRP, CashflowEvents.CALCULATION_ACCEPTED_EVENT);
-            put(CashflowStates.CALCULATION_ACCEPTED, CashflowEvents.CALCULATION_COMPLETED_EVENT);
-            put(CashflowStates.CALCULATION_COMPLETED, CashflowEvents.REVERSED_ETL_START_EVENT);
+            put(CashFlowStates.CALCULATION_START, CashFlowEvents.CALCULATION_SENT_TO_DRP_EVENT);
+            put(CashFlowStates.CALCULATION_SENT_TO_DRP, CashFlowEvents.CALCULATION_ACCEPTED_EVENT);
+            put(CashFlowStates.CALCULATION_ACCEPTED, CashFlowEvents.CALCULATION_COMPLETED_EVENT);
+            put(CashFlowStates.CALCULATION_COMPLETED, CashFlowEvents.REVERSED_ETL_START_EVENT);
 
-            put(CashflowStates.REVERSED_ETL_START, CashflowEvents.REVERSED_ETL_SENT_TO_DRP_EVENT);
-            put(CashflowStates.REVERSED_ETL_SENT_TO_DRP, CashflowEvents.REVERSED_ETL_ACCEPTED_EVENT);
-            put(CashflowStates.REVERSED_ETL_ACCEPTED, CashflowEvents.REVERSED_COMPLETED_EVENT);
-            put(CashflowStates.REVERSED_COMPLETED, CashflowEvents.DATA_COPIED_FROM_STAGED_EVENT);
+            put(CashFlowStates.REVERSED_ETL_START, CashFlowEvents.REVERSED_ETL_SENT_TO_DRP_EVENT);
+            put(CashFlowStates.REVERSED_ETL_SENT_TO_DRP, CashFlowEvents.REVERSED_ETL_ACCEPTED_EVENT);
+            put(CashFlowStates.REVERSED_ETL_ACCEPTED, CashFlowEvents.REVERSED_COMPLETED_EVENT);
+            put(CashFlowStates.REVERSED_COMPLETED, CashFlowEvents.DATA_COPIED_FROM_STAGED_EVENT);
 
-            put(CashflowStates.DATA_COPIED_FROM_STAGED, CashflowEvents.CALCULATION_FINISHED_EVENT);
+            put(CashFlowStates.DATA_COPIED_FROM_STAGED, CashFlowEvents.CALCULATION_FINISHED_EVENT);
+        }
+    };
+    private static final Map<VssdvStates, VssdvEvents> VSSDV_NEXT_STATE_EVENT = new HashMap<>() {
+        {
+            put(VssdvStates.CALCULATION_STARTED, VssdvEvents.VAR_MODEL_DATA_COPIED_TO_STAGED_EVENT);
+            put(VssdvStates.VAR_MODEL_DATA_COPIED_TO_STAGED, VssdvEvents.VAR_MODEL_ETL_START_EVENT);
+
+            put(VssdvStates.VAR_MODEL_ETL_START, VssdvEvents.BLACK_MODEL_DATA_PREPARED_EVENT);
+            put(VssdvStates.BLACK_MODEL_DATA_PREPARED, VssdvEvents.BLACK_MODEL_DATA_COPIED_TO_STAGED_EVENT);
         }
     };
 
-    private final CashFlowStateMachineService stateMachineService;
+    private final Map<CalculationType, NextStateExecutor> executorMap;
+
+    @Autowired
+    public CalculationServiceImpl(
+            CashFlowStateMachineService cashFlowStateMachineService,
+            VssdvStateMachineService vssdvStateMachineService
+    ) {
+        this.executorMap = Map.of(
+                CalculationType.CASH_FLOW, new CashFlowNextStateExecutor(cashFlowStateMachineService),
+                CalculationType.VSSDV, new VssdvNextStateExecutor(vssdvStateMachineService)
+        );
+    }
+
 
     @Override
-    public String nextState(@NotNull UUID calculationUid) {
-        final var stateMachine = stateMachineService
-                .acquireStateMachine(CASH_FLOW.value(), calculationUid.toString());
+    public String nextState(@NotNull CalculationType type, @NotNull UUID calculationUid) {
+        return executorMap
+                .get(type)
+                .nextState(calculationUid);
+    }
 
-        final var state = stateMachine.getState().getId();
-        logger.info("Current SM '{}' for UID '{}' with state '{}'",
-                    toHexString(stateMachine.hashCode()), stateMachine.getUuid(), state);
+    private interface NextStateExecutor {
+        String nextState(@NotNull UUID calculationUid);
 
-        final var event = NEXT_STATE_EVENT.get(state);
-        final var message = withPayload(event).build();
-        stateMachine.sendEvent(Mono.just(message)).subscribe();
+        CalculationType type();
+    }
 
-        return stateMachine.getState().getId().name();
+    private abstract static class BaseNextStateExecutor<States extends Enum<States>, Events extends Enum<Events>>
+            implements NextStateExecutor {
+
+        @Override
+        public String nextState(@NotNull UUID calculationUid) {
+            final var stateMachine = stateMachineService()
+                    .acquireStateMachine(calculationUid.toString());
+
+            final var state = stateMachine.getState().getId();
+            logger.info("Current SM '{}' for UID '{}' with state '{}'",
+                        toHexString(stateMachine.hashCode()), stateMachine.getUuid(), state);
+
+            final var event = event(state);
+            final var message = withPayload(event).build();
+            final var result = stateMachine.sendEvent(just(message)).blockLast();
+
+            if (result.getResultType() != ResultType.ACCEPTED) {
+                throw new IllegalStateException(
+                        "State Machine '" + calculationUid + "' has wrong state '" +
+                                result.getRegion().getState().getId() + "' for transition " + event);
+            }
+
+            return stateMachine.getState().getId().name();
+        }
+
+        protected abstract Events event(States state);
+
+        protected abstract StateMachineService<States, Events> stateMachineService();
+    }
+
+    @RequiredArgsConstructor
+    private static class CashFlowNextStateExecutor
+            extends BaseNextStateExecutor<CashFlowStates, CashFlowEvents> {
+        private final CashFlowStateMachineService cashFlowStateMachineService;
+
+        @Override
+        protected CashFlowEvents event(CashFlowStates state) {
+            return CASH_FLOW_NEXT_STATE_EVENT.get(state);
+        }
+
+        @Override
+        protected StateMachineService<CashFlowStates, CashFlowEvents> stateMachineService() {
+            return cashFlowStateMachineService;
+        }
+
+        @Override
+        public CalculationType type() {
+            return CalculationType.CASH_FLOW;
+        }
+    }
+
+    @RequiredArgsConstructor
+    private static class VssdvNextStateExecutor
+            extends BaseNextStateExecutor<VssdvStates, VssdvEvents> {
+        private final VssdvStateMachineService vssdvStateMachineService;
+
+        private final Iterator<VssdvEvents> events = List.of(
+                VssdvEvents.VAR_MODEL_DATA_COPIED_TO_STAGED_EVENT,
+                VssdvEvents.VAR_MODEL_ETL_START_EVENT,
+                VssdvEvents.VAR_MODEL_ETL_SENT_TO_DRP_EVENT,
+                VssdvEvents.BLACK_MODEL_DATA_COPIED_TO_STAGED_EVENT,
+                VssdvEvents.BLACK_MODEL_ETL_START_EVENT,
+                VssdvEvents.VAR_MODEL_ETL_ACCEPTED_EVENT,
+                VssdvEvents.BLACK_MODEL_ETL_ACCEPTED_EVENT,
+                VssdvEvents.VAR_MODEL_ETL_COMPLETED_EVENT
+        ).iterator();
+
+        @Override
+        protected VssdvEvents event(VssdvStates state) {
+            return events.next();
+        }
+
+        @Override
+        protected StateMachineService<VssdvStates, VssdvEvents> stateMachineService() {
+            return vssdvStateMachineService;
+        }
+
+        @Override
+        public CalculationType type() {
+            return CalculationType.CASH_FLOW;
+        }
     }
 }
