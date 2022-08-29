@@ -16,16 +16,14 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.StateMachineContext;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
-import ru.romanow.state.machine.domain.CalculationStatus;
-import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 
 @RequiredArgsConstructor
-public abstract class BaseStateMachineService<States, Events, CS extends CalculationStatus<States>, REPO extends CalculationStatusRepository<States, CS>>
+public abstract class BaseStateMachineService<States extends Enum<States>, Events extends Enum<Events>>
         implements StateMachineService<States, Events>,
                    DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(BaseStateMachineService.class);
 
-    private final BaseCustomStateMachinePersist<States, Events, CS, REPO> stateMachinePersist;
+    private final BaseCustomStateMachinePersist<States, Events> stateMachinePersist;
     private final Map<String, StateMachine<States, Events>> machines = new ConcurrentHashMap<>();
     private final StateMachineFactory<States, Events> stateMachineFactory;
 

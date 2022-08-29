@@ -14,17 +14,14 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import org.springframework.statemachine.event.StateMachineEvent;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
 import org.springframework.statemachine.state.State;
-import ru.romanow.state.machine.domain.CashFlowCalculationStatus;
-import ru.romanow.state.machine.domain.VssdvCalculationStatus;
 import ru.romanow.state.machine.models.cashflow.CashFlowEvents;
 import ru.romanow.state.machine.models.cashflow.CashFlowStates;
 import ru.romanow.state.machine.models.vssdv.VssdvEvents;
 import ru.romanow.state.machine.models.vssdv.VssdvStates;
-import ru.romanow.state.machine.repostitory.CashFlowCalculationStatusRepository;
-import ru.romanow.state.machine.repostitory.VssdvCalculationStatusRepository;
 import ru.romanow.state.machine.service.BaseCustomStateMachinePersist;
 
 import static java.util.EnumSet.allOf;
+import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toSet;
 import static ru.romanow.state.machine.domain.CalculationTypes.CASHFLOW;
 import static ru.romanow.state.machine.domain.CalculationTypes.VSSDV;
@@ -43,7 +40,7 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class CashflowStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<CashFlowStates, CashFlowEvents> {
-        private final BaseCustomStateMachinePersist<CashFlowStates, CashFlowEvents, CashFlowCalculationStatus, CashFlowCalculationStatusRepository> cashFlowStateMachinePersist;
+        private final BaseCustomStateMachinePersist<CashFlowStates, CashFlowEvents> cashFlowStateMachinePersist;
 
         @Override
         public void configure(StateMachineConfigurationConfigurer<CashFlowStates, CashFlowEvents> config)
@@ -168,15 +165,7 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class VssdvStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<VssdvStates, VssdvEvents> {
-        private final BaseCustomStateMachinePersist<VssdvStates, VssdvEvents, VssdvCalculationStatus, VssdvCalculationStatusRepository> vssdvStateMachinePersist;
-
-        public static class StateMachineListener
-                extends StateMachineListenerAdapter<VssdvStates, VssdvEvents> {
-            @Override
-            public void stateChanged(State<VssdvStates, VssdvEvents> from, State<VssdvStates, VssdvEvents> to) {
-                logger.info("State changed from {} to: {}", from.getIds(), to.getIds());
-            }
-        }
+        private final BaseCustomStateMachinePersist<VssdvStates, VssdvEvents> vssdvStateMachinePersist;
 
         @Override
         public void configure(StateMachineConfigurationConfigurer<VssdvStates, VssdvEvents> config)
@@ -196,6 +185,7 @@ public class StateMachineConfiguration {
                 throws Exception {
             // @formatter:off
             states.withStates()
+                      .region("VSSDV")
                       .initial(VssdvStates.CALCULATION_STARTED)
                       .fork(VssdvStates.CALCULATION_STARTED)
                       .join(VssdvStates.VSSDV_CALCULATION_START)
@@ -207,6 +197,7 @@ public class StateMachineConfiguration {
                       .end(VssdvStates.CALCULATION_ERROR)
                   .and()
                   .withStates()
+                      .region("Var Model")
                       .parent(VssdvStates.CALCULATION_STARTED)
                       .initial(VssdvStates.VAR_MODEL_DATA_PREPARED)
                       .end(VssdvStates.VAR_MODEL_CALCULATION_FINISHED)
@@ -216,6 +207,7 @@ public class StateMachineConfiguration {
                                       .collect(toSet()))
                   .and()
                   .withStates()
+                      .region("Black Model")
                       .parent(VssdvStates.CALCULATION_STARTED)
                       .initial(VssdvStates.BLACK_MODEL_DATA_PREPARED)
                       .end(VssdvStates.BLACK_MODEL_CALCULATION_FINISHED)
@@ -486,6 +478,14 @@ public class StateMachineConfiguration {
                         .source(state)
                         .target(VssdvStates.CALCULATION_ERROR)
                         .event(VssdvEvents.CALCULATION_ERROR_EVENT);
+            }
+        }
+
+        private static class StateMachineListener
+                extends StateMachineListenerAdapter<VssdvStates, VssdvEvents> {
+            @Override
+            public void stateChanged(State<VssdvStates, VssdvEvents> from, State<VssdvStates, VssdvEvents> to) {
+                logger.info("State changed from {} to: {}", nonNull(from) ? from.getIds() : "empty", to.getIds());
             }
         }
     }

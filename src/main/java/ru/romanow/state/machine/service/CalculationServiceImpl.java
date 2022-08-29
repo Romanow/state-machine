@@ -30,7 +30,7 @@ public class CalculationServiceImpl
 
     private static final Logger logger = getLogger(CalculationServiceImpl.class);
 
-    private static final Map<CashFlowStates, CashFlowEvents> CASH_FLOW_NEXT_STATE_EVENT = new HashMap<>() {
+    private static final Map<CashFlowStates, CashFlowEvents> CASH_FLOW_EVENTS = new HashMap<>() {
         {
             put(CashFlowStates.CALCULATION_STARTED, CashFlowEvents.DATA_PREPARED_EVENT);
             put(CashFlowStates.DATA_PREPARED, CashFlowEvents.DATA_COPIED_TO_STAGED_EVENT);
@@ -54,15 +54,16 @@ public class CalculationServiceImpl
             put(CashFlowStates.DATA_COPIED_FROM_STAGED, CashFlowEvents.CALCULATION_FINISHED_EVENT);
         }
     };
-    private static final Map<VssdvStates, VssdvEvents> VSSDV_NEXT_STATE_EVENT = new HashMap<>() {
-        {
-            put(VssdvStates.CALCULATION_STARTED, VssdvEvents.VAR_MODEL_DATA_COPIED_TO_STAGED_EVENT);
-            put(VssdvStates.VAR_MODEL_DATA_COPIED_TO_STAGED, VssdvEvents.VAR_MODEL_ETL_START_EVENT);
-
-            put(VssdvStates.VAR_MODEL_ETL_START, VssdvEvents.BLACK_MODEL_DATA_PREPARED_EVENT);
-            put(VssdvStates.BLACK_MODEL_DATA_PREPARED, VssdvEvents.BLACK_MODEL_DATA_COPIED_TO_STAGED_EVENT);
-        }
-    };
+    private static final Iterator<VssdvEvents> VSSDV_EVENTS = List.of(
+            VssdvEvents.VAR_MODEL_DATA_COPIED_TO_STAGED_EVENT,
+            VssdvEvents.VAR_MODEL_ETL_START_EVENT,
+            VssdvEvents.VAR_MODEL_ETL_SENT_TO_DRP_EVENT,
+            VssdvEvents.BLACK_MODEL_DATA_COPIED_TO_STAGED_EVENT,
+            VssdvEvents.BLACK_MODEL_ETL_START_EVENT,
+            VssdvEvents.VAR_MODEL_ETL_ACCEPTED_EVENT,
+            VssdvEvents.BLACK_MODEL_ETL_SENT_TO_DRP_EVENT,
+            VssdvEvents.VAR_MODEL_ETL_COMPLETED_EVENT
+    ).iterator();
 
     private final Map<CalculationType, NextStateExecutor> executorMap;
 
@@ -110,7 +111,7 @@ public class CalculationServiceImpl
             if (result.getResultType() != ResultType.ACCEPTED) {
                 throw new IllegalStateException(
                         "State Machine '" + calculationUid + "' has wrong state '" +
-                                result.getRegion().getState().getId() + "' for transition " + event);
+                                result.getRegion().getState().getIds() + "' for transition " + event);
             }
 
             return stateMachine.getState().getId().name();
@@ -128,7 +129,7 @@ public class CalculationServiceImpl
 
         @Override
         protected CashFlowEvents event(CashFlowStates state) {
-            return CASH_FLOW_NEXT_STATE_EVENT.get(state);
+            return CASH_FLOW_EVENTS.get(state);
         }
 
         @Override
@@ -147,20 +148,9 @@ public class CalculationServiceImpl
             extends BaseNextStateExecutor<VssdvStates, VssdvEvents> {
         private final VssdvStateMachineService vssdvStateMachineService;
 
-        private final Iterator<VssdvEvents> events = List.of(
-                VssdvEvents.VAR_MODEL_DATA_COPIED_TO_STAGED_EVENT,
-                VssdvEvents.VAR_MODEL_ETL_START_EVENT,
-                VssdvEvents.VAR_MODEL_ETL_SENT_TO_DRP_EVENT,
-                VssdvEvents.BLACK_MODEL_DATA_COPIED_TO_STAGED_EVENT,
-                VssdvEvents.BLACK_MODEL_ETL_START_EVENT,
-                VssdvEvents.VAR_MODEL_ETL_ACCEPTED_EVENT,
-                VssdvEvents.BLACK_MODEL_ETL_ACCEPTED_EVENT,
-                VssdvEvents.VAR_MODEL_ETL_COMPLETED_EVENT
-        ).iterator();
-
         @Override
         protected VssdvEvents event(VssdvStates state) {
-            return events.next();
+            return VSSDV_EVENTS.next();
         }
 
         @Override

@@ -1,5 +1,6 @@
 package ru.romanow.state.machine.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
@@ -13,45 +14,69 @@ import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.statemachine.support.StateMachineInterceptor;
 import org.springframework.statemachine.transition.Transition;
-import org.springframework.stereotype.Component;
+import org.springframework.statemachine.transition.TransitionKind;
 import ru.romanow.state.machine.domain.CalculationStatus;
 import ru.romanow.state.machine.repostitory.CalculationRepository;
 import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 
+import static java.lang.String.join;
 import static java.util.UUID.fromString;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.IntStream.range;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.data.domain.Pageable.ofSize;
+import static org.springframework.util.CollectionUtils.isEmpty;
 
 @RequiredArgsConstructor
-public abstract class BaseCustomStateMachinePersist<States, Events, CS extends CalculationStatus<States>, REPO extends CalculationStatusRepository<States, CS>>
+public abstract class BaseCustomStateMachinePersist<States extends Enum<States>, Events extends Enum<Events>>
         extends AbstractPersistingStateMachineInterceptor<States, Events, String>
         implements StateMachineRuntimePersister<States, Events, String> {
 
     private static final Logger logger = getLogger(BaseCustomStateMachinePersist.class);
+    private static final String DELIMITER = ";";
 
     private final CalculationRepository calculationRepository;
-    private final REPO calculationStatusRepository;
+    private final CalculationStatusRepository calculationStatusRepository;
 
     @Override
     public void write(StateMachineContext<States, Events> context, String machineId) {
         logger.info("Write StateMachine '{}' state {}", machineId, context.getState());
 
         var calculation = calculationRepository.findByUid(fromString(machineId));
-        var calculationStatus = buildCalculationStatus(context.getState());
-        calculationStatus.setCalculation(calculation);
+        var calculationStatus = new CalculationStatus()
+                .setStatus(buildStatus(context))
+                .setCalculation(calculation);
 
         calculationStatusRepository.save(calculationStatus);
     }
 
+    private String buildStatus(StateMachineContext<States, Events> context) {
+        var statuses = new ArrayList<String>();
+        statuses.add(context.getState().name());
+        if (!isEmpty(context.getChilds())) {
+            context.getChilds().forEach(c -> statuses.add(c.getState().name()));
+        }
+        return join(DELIMITER, statuses);
+    }
+
     @Override
     public StateMachineContext<States, Events> read(String machineId) {
-        final List<States> states = calculationStatusRepository
+        final List<String> list = calculationStatusRepository
                 .getCalculationLastState(fromString(machineId), ofSize(1));
 
-        if (!states.isEmpty()) {
-            var state = states.get(0);
+        if (!list.isEmpty()) {
+            var state = list.get(0);
             logger.info("Restore context for StateMachine '{}' with state {}", machineId, state);
-            return new DefaultStateMachineContext<>(state, null, null, null, null, machineId);
+
+            var states = state.split(DELIMITER);
+            var mainState = restoreState(states[0]);
+            final List<StateMachineContext<States, Events>> childrenStates =
+                    range(1, states.length)
+                            .mapToObj(i -> new DefaultStateMachineContext<States, Events>
+                                    (restoreState(states[i]), null, null, null))
+                            .collect(toList());
+
+            return new DefaultStateMachineContext<>(childrenStates, mainState, null, null, null, null, machineId);
         }
 
         logger.info("Previous state not found for StateMachine '{}', create new", machineId);
@@ -59,16 +84,19 @@ public abstract class BaseCustomStateMachinePersist<States, Events, CS extends C
     }
 
     @Override
+    public void preStateChange(State<States, Events> state, Message<Events> message,
+                               Transition<States, Events> transition, StateMachine<States, Events> stateMachine,
+                               StateMachine<States, Events> rootStateMachine) {
+    }
+
+    @Override
     public void postStateChange(State<States, Events> state, Message<Events> message,
                                 Transition<States, Events> transition,
                                 StateMachine<States, Events> stateMachine,
                                 StateMachine<States, Events> rootStateMachine) {
-        // Не записываем переход из Start в Init State (CALCULATION_STARTED), т.к. при инициализации
-        // StateMachine, которой нет в памяти, вызывается `persist.write(context, machineId)` на
-        // init transaction, т.е. в CalculationStatus всегда записывается начальное состояние.
-        // Как следствие в CalculationStatus появляется запись `CALCULATION_STARTED`, даже если
-        // для этого `calculationUid` уже есть записи. Для решения этой проблемы создано фиктивное
-        // состояние `CALCULATION_STARTED`, которое не записывается в БД.
+        if (state != null && transition != null && transition.getKind() != TransitionKind.INITIAL) {
+            write(buildStateMachineContext(stateMachine, rootStateMachine, state, message), rootStateMachine.getId());
+        }
     }
 
     @Override
@@ -76,5 +104,21 @@ public abstract class BaseCustomStateMachinePersist<States, Events, CS extends C
         return this;
     }
 
-    protected abstract CS buildCalculationStatus(@NotNull States state);
+    protected abstract States restoreState(@NotNull String state);
+
+    @Override
+    protected StateMachineContext<States, Events> buildStateMachineContext(StateMachine<States, Events> stateMachine,
+                                                                           StateMachine<States, Events> rootStateMachine,
+                                                                           State<States, Events> state,
+                                                                           Message<Events> message) {
+        final var states = List.copyOf(rootStateMachine.getState().getIds());
+        final List<StateMachineContext<States, Events>> childrenStates = range(1, states.size())
+                .mapToObj(i -> new DefaultStateMachineContext<>(states.get(i), message.getPayload(), null, null))
+                .collect(toList());
+
+        return new DefaultStateMachineContext<>(childrenStates, rootStateMachine.getState().getId(),
+                                                message.getPayload(),
+                                                message.getHeaders(),
+                                                stateMachine.getExtendedState());
+    }
 }

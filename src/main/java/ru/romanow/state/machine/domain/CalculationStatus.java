@@ -2,16 +2,12 @@ package ru.romanow.state.machine.domain;
 
 import java.time.LocalDateTime;
 import javax.persistence.Column;
-import javax.persistence.DiscriminatorColumn;
-import javax.persistence.DiscriminatorType;
 import javax.persistence.Entity;
 import javax.persistence.EntityListeners;
 import javax.persistence.ForeignKey;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -30,9 +26,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Entity
 @Table(name = "calculation_status")
 @EntityListeners(AuditingEntityListener.class)
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "type", discriminatorType = DiscriminatorType.STRING)
-public abstract class CalculationStatus<T> {
+public class CalculationStatus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,8 +40,8 @@ public abstract class CalculationStatus<T> {
     @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdDate;
 
-    @Column(nullable = false)
-    protected abstract T getStatus();
+    @Column(name = "status", nullable = false)
+    private String status;
 
     @Override
     public boolean equals(Object o) {
@@ -62,7 +56,7 @@ public abstract class CalculationStatus<T> {
         final CalculationStatus that = (CalculationStatus) o;
 
         return new EqualsBuilder().append(id, that.id)
-                                  .append(getStatus(), that.getStatus())
+                                  .append(status, that.status)
                                   .append(createdDate, that.createdDate)
                                   .isEquals();
     }
@@ -70,7 +64,7 @@ public abstract class CalculationStatus<T> {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).append(id)
-                                          .append(getStatus())
+                                          .append(status)
                                           .append(createdDate)
                                           .toHashCode();
     }
@@ -79,7 +73,7 @@ public abstract class CalculationStatus<T> {
     public String toString() {
         return new ToStringBuilder(this)
                 .append("id", id)
-                .append("status", getStatus())
+                .append("status", status)
                 .append("createdDate", createdDate)
                 .toString();
     }

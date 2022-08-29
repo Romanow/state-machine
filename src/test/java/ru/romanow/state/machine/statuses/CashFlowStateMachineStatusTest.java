@@ -1,17 +1,14 @@
-package ru.romanow.state.machine;
+package ru.romanow.state.machine.statuses;
 
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.statemachine.test.StateMachineTestPlanBuilder;
-import org.springframework.test.context.ActiveProfiles;
-import ru.romanow.state.machine.StateMachineStatusTest.TestConfiguration;
 import ru.romanow.state.machine.models.cashflow.CashFlowEvents;
 import ru.romanow.state.machine.models.cashflow.CashFlowStates;
-import ru.romanow.state.machine.repostitory.CashFlowCalculationStatusRepository;
+import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 import ru.romanow.state.machine.service.cashflow.CashFlowStateMachineService;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -19,13 +16,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static ru.romanow.state.machine.domain.enums.CalculationType.CASH_FLOW;
 
-@ActiveProfiles("test")
-@SpringBootTest(classes = TestConfiguration.class)
-public class CashFlowStateMachineStatusTest
+class CashFlowStateMachineStatusTest
         extends StateMachineStatusTest {
 
     @Autowired
-    private CashFlowCalculationStatusRepository cashFlowCalculationStatusRepository;
+    private CalculationStatusRepository calculationStatusRepository;
 
     @Autowired
     private CashFlowStateMachineService cashFlowStateMachineService;
@@ -36,7 +31,7 @@ public class CashFlowStateMachineStatusTest
         var machineId = UUID.randomUUID();
         when(calculationRepository.findByUid(machineId))
                 .thenReturn(buildCalculation(machineId, CASH_FLOW));
-        when(cashFlowCalculationStatusRepository.getCalculationLastState(eq(machineId), any(Pageable.class)))
+        when(calculationStatusRepository.getCalculationLastState(eq(machineId), any(Pageable.class)))
                 .thenReturn(List.of());
 
         var stateMachine = cashFlowStateMachineService
@@ -151,7 +146,7 @@ public class CashFlowStateMachineStatusTest
         var machineId = UUID.randomUUID();
         when(calculationRepository.findByUid(machineId))
                 .thenReturn(buildCalculation(machineId, CASH_FLOW));
-        when(cashFlowCalculationStatusRepository.getCalculationLastState(eq(machineId), any(Pageable.class)))
+        when(calculationStatusRepository.getCalculationLastState(eq(machineId), any(Pageable.class)))
                 .thenReturn(List.of());
 
         var stateMachine = cashFlowStateMachineService
