@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.statemachine.test.StateMachineTestPlanBuilder;
-import ru.romanow.state.machine.models.cashflow.CashFlowEvents;
-import ru.romanow.state.machine.models.cashflow.CashFlowStates;
 import ru.romanow.state.machine.models.vssdv.VssdvEvents;
 import ru.romanow.state.machine.models.vssdv.VssdvStates;
 import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
