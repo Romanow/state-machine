@@ -38,7 +38,7 @@ public class StateMachineConfiguration {
     @Configuration
     @EnableStateMachineFactory(name = CASHFLOW)
     @RequiredArgsConstructor
-    static class CashflowStateMachineConfiguration
+    static class CashFlowStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<CashFlowStates, CashFlowEvents> {
         private final BaseCustomStateMachinePersist<CashFlowStates, CashFlowEvents> cashFlowStateMachinePersist;
 
@@ -188,7 +188,7 @@ public class StateMachineConfiguration {
                       .region("VSSDV")
                       .initial(VssdvStates.CALCULATION_STARTED)
                       .fork(VssdvStates.CALCULATION_STARTED)
-                      .join(VssdvStates.VSSDV_CALCULATION_START)
+                      .join(VssdvStates.VSSDV_JOIN_STATE)
                       .states(allOf(VssdvStates.class)
                                       .stream()
                                       .filter(s -> s.name().startsWith("VSSDV_"))
@@ -199,7 +199,7 @@ public class StateMachineConfiguration {
                   .withStates()
                       .region("Var Model")
                       .parent(VssdvStates.CALCULATION_STARTED)
-                      .initial(VssdvStates.VAR_MODEL_DATA_PREPARED)
+                      .initial(VssdvStates.VAR_MODEL_CALCULATION_STARTED)
                       .end(VssdvStates.VAR_MODEL_CALCULATION_FINISHED)
                       .states(allOf(VssdvStates.class)
                                       .stream()
@@ -209,7 +209,7 @@ public class StateMachineConfiguration {
                   .withStates()
                       .region("Black Model")
                       .parent(VssdvStates.CALCULATION_STARTED)
-                      .initial(VssdvStates.BLACK_MODEL_DATA_PREPARED)
+                      .initial(VssdvStates.BLACK_MODEL_CALCULATION_STARTED)
                       .end(VssdvStates.BLACK_MODEL_CALCULATION_FINISHED)
                       .states(allOf(VssdvStates.class)
                                       .stream()
@@ -226,8 +226,13 @@ public class StateMachineConfiguration {
             transitions
                     .withFork()
                         .source(VssdvStates.CALCULATION_STARTED)
+                        .target(VssdvStates.VAR_MODEL_CALCULATION_STARTED)
+                        .target(VssdvStates.BLACK_MODEL_CALCULATION_STARTED)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VAR_MODEL_CALCULATION_STARTED)
                         .target(VssdvStates.VAR_MODEL_DATA_PREPARED)
-                        .target(VssdvStates.BLACK_MODEL_DATA_PREPARED)
+                        .event(VssdvEvents.VAR_MODEL_DATA_PREPARED_EVENT)
                     .and()
                     .withExternal()
                         .source(VssdvStates.VAR_MODEL_DATA_PREPARED)
@@ -307,6 +312,11 @@ public class StateMachineConfiguration {
             
             // region Black Model
             transitions
+                    .withExternal()
+                        .source(VssdvStates.BLACK_MODEL_CALCULATION_STARTED)
+                        .target(VssdvStates.BLACK_MODEL_DATA_PREPARED)
+                        .event(VssdvEvents.BLACK_MODEL_DATA_PREPARED_EVENT)
+                    .and()
                     .withExternal()
                         .source(VssdvStates.BLACK_MODEL_DATA_PREPARED)
                         .target(VssdvStates.BLACK_MODEL_DATA_COPIED_TO_STAGED)
@@ -388,10 +398,14 @@ public class StateMachineConfiguration {
                     .withJoin()
                         .source(VssdvStates.VAR_MODEL_CALCULATION_FINISHED)
                         .source(VssdvStates.BLACK_MODEL_CALCULATION_FINISHED)
-                        .target(VssdvStates.VSSDV_CALCULATION_START)
+                        .target(VssdvStates.VSSDV_JOIN_STATE)
                     .and()
                     .withExternal()
-                        .source(VssdvStates.VSSDV_CALCULATION_START)
+                        .source(VssdvStates.VSSDV_JOIN_STATE)
+                        .target(VssdvStates.VSSDV_CALCULATION_STARTED)
+                    .and()
+                    .withExternal()
+                        .source(VssdvStates.VSSDV_CALCULATION_STARTED)
                         .target(VssdvStates.VSSDV_DATA_PREPARED)
                         .event(VssdvEvents.VSSDV_DATA_PREPARED_EVENT)
                     .and()

@@ -20,6 +20,7 @@ import ru.romanow.state.machine.repostitory.CalculationRepository;
 import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 
 import static java.lang.String.join;
+import static java.util.Objects.isNull;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -112,13 +113,15 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
                                                                            State<States, Events> state,
                                                                            Message<Events> message) {
         final var states = List.copyOf(rootStateMachine.getState().getIds());
+        final var payload = !isNull(message) ? message.getPayload() : null;
+        final var headers = !isNull(message) ? message.getHeaders() : null;
         final List<StateMachineContext<States, Events>> childrenStates = range(1, states.size())
-                .mapToObj(i -> new DefaultStateMachineContext<>(states.get(i), message.getPayload(), null, null))
+                .mapToObj(i -> new DefaultStateMachineContext<>(states.get(i), payload, null, null))
                 .collect(toList());
 
         return new DefaultStateMachineContext<>(childrenStates, rootStateMachine.getState().getId(),
-                                                message.getPayload(),
-                                                message.getHeaders(),
+                                                payload,
+                                                headers,
                                                 stateMachine.getExtendedState());
     }
 }

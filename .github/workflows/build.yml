@@ -20,11 +20,8 @@ jobs:
           dependencies-cache-enabled: true
           arguments: clean build
 
-      - name: Run API Tests
-        id: run-newman
-        uses: anthonyvscode/newman-action@v1
+      - name: Test Report
+        uses: mikepenz/action-junit-report@v2
+        if: always()
         with:
-          collection: postman/[inst] Lab1.postman_collection.json
-          environment: postman/[inst][heroku] Lab1.postman_environment.json
-          delayRequest: 50
-          reporters: cli
+          report_paths: '**/build/test-results/test/TEST-*.xml'

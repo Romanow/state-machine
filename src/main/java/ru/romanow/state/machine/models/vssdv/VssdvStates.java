@@ -7,6 +7,7 @@ public enum VssdvStates {
     // #################################
     // ########### VaR Model ###########
     // #################################
+    VAR_MODEL_CALCULATION_STARTED,
     VAR_MODEL_DATA_PREPARED,
     VAR_MODEL_DATA_COPIED_TO_STAGED,
 
@@ -36,6 +37,7 @@ public enum VssdvStates {
     // #################################
     // ########## Black Model ##########
     // #################################
+    BLACK_MODEL_CALCULATION_STARTED,
     BLACK_MODEL_DATA_PREPARED,
     BLACK_MODEL_DATA_COPIED_TO_STAGED,
 
@@ -65,6 +67,8 @@ public enum VssdvStates {
     // #################################
     // ############ VSSDV ##############
     // #################################
+    VSSDV_JOIN_STATE,
+    VSSDV_CALCULATION_STARTED,
     VSSDV_DATA_PREPARED,
     VSSDV_DATA_COPIED_TO_STAGED,
 
