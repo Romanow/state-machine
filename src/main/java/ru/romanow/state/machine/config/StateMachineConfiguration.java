@@ -18,7 +18,8 @@ import ru.romanow.state.machine.models.cashflow.CashFlowEvents;
 import ru.romanow.state.machine.models.cashflow.CashFlowStates;
 import ru.romanow.state.machine.models.vssdv.VssdvEvents;
 import ru.romanow.state.machine.models.vssdv.VssdvStates;
-import ru.romanow.state.machine.service.BaseCustomStateMachinePersist;
+import ru.romanow.state.machine.service.cashflow.CashFlowCustomStateMachinePersist;
+import ru.romanow.state.machine.service.vssdv.VssdvCustomStateMachinePersist;
 
 import static java.util.EnumSet.allOf;
 import static java.util.Objects.nonNull;
@@ -40,7 +41,7 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class CashFlowStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<CashFlowStates, CashFlowEvents> {
-        private final BaseCustomStateMachinePersist<CashFlowStates, CashFlowEvents> cashFlowStateMachinePersist;
+        private final CashFlowCustomStateMachinePersist cashFlowStateMachinePersist;
 
         @Override
         public void configure(StateMachineConfigurationConfigurer<CashFlowStates, CashFlowEvents> config)
@@ -48,6 +49,7 @@ public class StateMachineConfiguration {
             // @formatter:off
             config.withConfiguration()
                       .autoStartup(true)
+                      .listener(new StateMachineListener<>())
                   .and()
                       .withPersistence()
                       .runtimePersister(cashFlowStateMachinePersist);
@@ -165,18 +167,18 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class VssdvStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<VssdvStates, VssdvEvents> {
-        private final BaseCustomStateMachinePersist<VssdvStates, VssdvEvents> vssdvStateMachinePersist;
+        private final VssdvCustomStateMachinePersist vssdvStateMachinePersist;
 
         @Override
         public void configure(StateMachineConfigurationConfigurer<VssdvStates, VssdvEvents> config)
                 throws Exception {
             // @formatter:off
             config.withConfiguration()
-                  .autoStartup(true)
-                  .listener(new StateMachineListener())
+                      .autoStartup(true)
+                      .listener(new StateMachineListener<>())
                   .and()
-                  .withPersistence()
-                  .runtimePersister(vssdvStateMachinePersist);
+                      .withPersistence()
+                      .runtimePersister(vssdvStateMachinePersist);
             // @formatter:on
         }
 
@@ -494,13 +496,13 @@ public class StateMachineConfiguration {
                         .event(VssdvEvents.CALCULATION_ERROR_EVENT);
             }
         }
+    }
 
-        private static class StateMachineListener
-                extends StateMachineListenerAdapter<VssdvStates, VssdvEvents> {
-            @Override
-            public void stateChanged(State<VssdvStates, VssdvEvents> from, State<VssdvStates, VssdvEvents> to) {
-                logger.info("State changed from {} to: {}", nonNull(from) ? from.getIds() : "empty", to.getIds());
-            }
+    private static class StateMachineListener<States extends Enum<States>, Events extends Enum<Events>>
+            extends StateMachineListenerAdapter<States, Events> {
+        @Override
+        public void stateChanged(State<States, Events> from, State<States, Events> to) {
+            logger.info("State changed from {} to: {}", nonNull(from) ? from.getIds() : "empty", to.getIds());
         }
     }
 }

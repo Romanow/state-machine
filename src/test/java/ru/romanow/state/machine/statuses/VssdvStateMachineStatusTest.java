@@ -2,22 +2,39 @@ package ru.romanow.state.machine.statuses;
 
 import java.util.List;
 import java.util.UUID;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Pageable;
+import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.test.StateMachineTestPlanBuilder;
+import org.springframework.test.context.ActiveProfiles;
+import ru.romanow.state.machine.config.StateMachineConfiguration;
+import ru.romanow.state.machine.domain.Calculation;
 import ru.romanow.state.machine.models.vssdv.VssdvEvents;
 import ru.romanow.state.machine.models.vssdv.VssdvStates;
+import ru.romanow.state.machine.repostitory.CalculationRepository;
 import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
+import ru.romanow.state.machine.service.cashflow.CashFlowCustomStateMachinePersist;
+import ru.romanow.state.machine.service.cashflow.CashFlowStateMachineService;
+import ru.romanow.state.machine.service.vssdv.VssdvCustomStateMachinePersist;
 import ru.romanow.state.machine.service.vssdv.VssdvStateMachineService;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static ru.romanow.state.machine.domain.enums.CalculationType.VSSDV;
 
-class VssdvStateMachineStatusTest
-        extends StateMachineStatusTest {
+@ActiveProfiles("test")
+@SpringBootTest
+class VssdvStateMachineStatusTest {
 
     @Autowired
     private CalculationStatusRepository calculationStatusRepository;
@@ -25,12 +42,15 @@ class VssdvStateMachineStatusTest
     @Autowired
     private VssdvStateMachineService cashFlowStateMachineService;
 
+    @Autowired
+    protected CalculationRepository calculationRepository;
+
     @Test
     void testSuccess()
             throws Exception {
         var machineId = UUID.randomUUID();
         when(calculationRepository.findByUid(machineId))
-                .thenReturn(buildCalculation(machineId, VSSDV));
+                .thenReturn(buildCalculation(machineId));
         when(calculationStatusRepository.getCalculationLastState(eq(machineId), any(Pageable.class)))
                 .thenReturn(List.of());
 
@@ -376,7 +396,7 @@ class VssdvStateMachineStatusTest
             throws Exception {
         var machineId = UUID.randomUUID();
         when(calculationRepository.findByUid(machineId))
-                .thenReturn(buildCalculation(machineId, VSSDV));
+                .thenReturn(buildCalculation(machineId));
         when(calculationStatusRepository.getCalculationLastState(eq(machineId), any(Pageable.class)))
                 .thenReturn(List.of());
 
@@ -420,6 +440,50 @@ class VssdvStateMachineStatusTest
                 .build()
                 .test();
         // @formatter:on
+    }
+
+    @NotNull
+    private Calculation buildCalculation(@NotNull UUID uid) {
+        return new Calculation()
+                .setUid(uid)
+                .setName(randomAlphabetic(8))
+                .setType(VSSDV)
+                .setDescription(randomAlphabetic(20));
+    }
+
+    @Configuration
+    @Import(StateMachineConfiguration.class)
+    static class TestConfiguration {
+
+        @MockBean
+        private CalculationRepository calculationRepository;
+
+        @MockBean
+        private CalculationStatusRepository calculationStatusRepository;
+
+        @Bean
+        public CashFlowCustomStateMachinePersist cashFlowCustomStateMachinePersist() {
+            return mock(CashFlowCustomStateMachinePersist.class);
+        }
+
+        @Bean
+        public CashFlowStateMachineService cashFlowStateMachineService() {
+            return mock(CashFlowStateMachineService.class);
+        }
+
+        @Bean
+        public VssdvCustomStateMachinePersist vssdvCustomStateMachinePersist() {
+            return new VssdvCustomStateMachinePersist(calculationRepository, calculationStatusRepository);
+        }
+
+        @Bean
+        @Autowired
+        public VssdvStateMachineService vssdvStateMachineService(
+                StateMachineFactory<VssdvStates, VssdvEvents> stateMachineFactory
+        ) {
+            return new VssdvStateMachineService(vssdvCustomStateMachinePersist(), stateMachineFactory);
+        }
+
     }
 
 }
