@@ -29,7 +29,7 @@ import ru.romanow.state.machine.statuses.StateMachineStatusTest.StateMachineStat
 import static org.testcontainers.shaded.org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 
 @ActiveProfiles("test")
-@SpringBootTest(classes = StateMachineStatusTestConfiguration.class)
+@SpringBootTest
 class StateMachineStatusTest {
 
     @Autowired
@@ -44,9 +44,9 @@ class StateMachineStatusTest {
                 .setDescription(randomAlphabetic(20));
     }
 
-    @TestConfiguration
+    @Configuration
     @Import(StateMachineConfiguration.class)
-    static class StateMachineStatusTestConfiguration {
+    protected static class StateMachineStatusTestConfiguration {
 
         @MockBean
         private CalculationRepository calculationRepository;
