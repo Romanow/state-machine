@@ -2,6 +2,7 @@ package ru.romanow.state.machine.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -15,9 +16,6 @@ import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.statemachine.support.StateMachineInterceptor;
 import org.springframework.statemachine.transition.Transition;
 import org.springframework.statemachine.transition.TransitionKind;
-import ru.romanow.state.machine.domain.CalculationStatus;
-import ru.romanow.state.machine.repostitory.CalculationRepository;
-import ru.romanow.state.machine.repostitory.CalculationStatusRepository;
 
 import static java.lang.String.join;
 import static java.util.Objects.isNull;
@@ -25,7 +23,6 @@ import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.springframework.data.domain.Pageable.ofSize;
 import static org.springframework.util.CollectionUtils.isEmpty;
 
 @RequiredArgsConstructor
@@ -36,19 +33,13 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
     private static final Logger logger = getLogger(BaseCustomStateMachinePersist.class);
     private static final String DELIMITER = ";";
 
-    private final CalculationRepository calculationRepository;
-    private final CalculationStatusRepository calculationStatusRepository;
+    private final CalculationService calculationService;
+    private final CalculationStatusService calculationStatusService;
 
     @Override
     public void write(StateMachineContext<States, Events> context, String machineId) {
         logger.info("Write StateMachine '{}' state {}", machineId, context.getState());
-
-        var calculation = calculationRepository.findByUid(fromString(machineId));
-        var calculationStatus = new CalculationStatus()
-                .setStatus(buildStatus(context))
-                .setCalculation(calculation);
-
-        calculationStatusRepository.save(calculationStatus);
+        calculationStatusService.create(fromString(machineId), buildStatus(context));
     }
 
     private String buildStatus(StateMachineContext<States, Events> context) {
@@ -62,11 +53,10 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
 
     @Override
     public StateMachineContext<States, Events> read(String machineId) {
-        final List<String> list = calculationStatusRepository
-                .getCalculationLastState(fromString(machineId), ofSize(1));
+        final Optional<String> result = calculationStatusService.getCalculationLastState(fromString(machineId));
 
-        if (!list.isEmpty()) {
-            var state = list.get(0);
+        if (result.isPresent()) {
+            var state = result.get();
             logger.info("Restore context for StateMachine '{}' with state {}", machineId, state);
 
             var states = state.split(DELIMITER);

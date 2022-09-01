@@ -8,7 +8,7 @@ public enum CashFlowStates {
     DATA_COPIED_TO_STAGED,     // Данные скопированы в схему staged
 
     ETL_START,                 // Старт загрузки в DRP
-    ETL_SEND_TO_DRP,           //   – Отправлен запрос в DRP
+    ETL_SENT_TO_DRP,           //   – Отправлен запрос в DRP
     ETL_ACCEPTED,              //   – DRP приступил к выполнению
     ETL_COMPLETED,             // Все файлы выгружены в DRP
 
@@ -20,7 +20,7 @@ public enum CashFlowStates {
     REVERSED_ETL_START,        // Начало загрузки результатов из DRP
     REVERSED_ETL_SENT_TO_DRP,  //   – Отправлен запрос в DRP
     REVERSED_ETL_ACCEPTED,     //   – DRP приступил к выполнению
-    REVERSED_COMPLETED,        // Окончание загрузки результатов из DRP
+    REVERSED_ETL_COMPLETED,    // Окончание загрузки результатов из DRP
 
     DATA_COPIED_FROM_STAGED,   // Данные скопированы из staged схемы
 
