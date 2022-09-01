@@ -478,10 +478,9 @@ class VssdvStateMachineStatusTest {
 
         @Bean
         public VssdvCustomStateMachinePersist vssdvCustomStateMachinePersist(
-                CalculationService calculationService,
                 CalculationStatusService calculationStatusService
         ) {
-            return new VssdvCustomStateMachinePersist(calculationService, calculationStatusService);
+            return new VssdvCustomStateMachinePersist(calculationStatusService);
         }
 
         @Bean

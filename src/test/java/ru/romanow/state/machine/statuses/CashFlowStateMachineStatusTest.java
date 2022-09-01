@@ -231,10 +231,9 @@ class CashFlowStateMachineStatusTest {
 
         @Bean
         public CashFlowCustomStateMachinePersist cashFlowCustomStateMachinePersist(
-                CalculationService calculationService,
                 CalculationStatusService calculationStatusService
         ) {
-            return new CashFlowCustomStateMachinePersist(calculationService, calculationStatusService);
+            return new CashFlowCustomStateMachinePersist(calculationStatusService);
         }
 
         @Bean

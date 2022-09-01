@@ -37,7 +37,7 @@ public abstract class BaseStateMachineService<States extends Enum<States>, Event
     @NotNull
     @Override
     @SneakyThrows
-    public StateMachine<States, Events> acquireStateMachine(@NotNull String machineId) {
+    public synchronized StateMachine<States, Events> acquireStateMachine(@NotNull String machineId) {
         logger.info("Acquiring StateMachine with ID '{}'", machineId);
 
         var stateMachine = machines.get(machineId);
@@ -53,7 +53,7 @@ public abstract class BaseStateMachineService<States extends Enum<States>, Event
     }
 
     @Override
-    public void releaseStateMachine(@NotNull String machineId) {
+    public synchronized void releaseStateMachine(@NotNull String machineId) {
         var stateMachine = machines.remove(machineId);
         if (stateMachine != null) {
             logger.info("Releasing StateMachine with id '{}'", machineId);

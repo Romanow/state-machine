@@ -56,6 +56,7 @@ public class TestTransitionServiceImpl
         }
     };
     private static final Iterator<VssdvEvents> VSSDV_EVENTS = List.of(
+            VssdvEvents.VAR_MODEL_DATA_PREPARED_EVENT,
             VssdvEvents.VAR_MODEL_DATA_COPIED_TO_STAGED_EVENT,
             VssdvEvents.VAR_MODEL_ETL_START_EVENT,
             VssdvEvents.VAR_MODEL_ETL_SENT_TO_DRP_EVENT,

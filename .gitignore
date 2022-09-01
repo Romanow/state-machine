@@ -7,6 +7,3 @@ build/
 *.iml
 *.ipr
 .DS_Store
-
-!.idea/codeStyles/
-!.idea/.gitignore

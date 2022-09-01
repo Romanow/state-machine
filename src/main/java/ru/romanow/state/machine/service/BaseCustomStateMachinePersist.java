@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
@@ -15,7 +16,6 @@ import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.statemachine.support.StateMachineInterceptor;
 import org.springframework.statemachine.transition.Transition;
-import org.springframework.statemachine.transition.TransitionKind;
 
 import static java.lang.String.join;
 import static java.util.Objects.isNull;
@@ -33,22 +33,12 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
     private static final Logger logger = getLogger(BaseCustomStateMachinePersist.class);
     private static final String DELIMITER = ";";
 
-    private final CalculationService calculationService;
     private final CalculationStatusService calculationStatusService;
 
     @Override
     public void write(StateMachineContext<States, Events> context, String machineId) {
         logger.info("Write StateMachine '{}' state {}", machineId, context.getState());
         calculationStatusService.create(fromString(machineId), buildStatus(context));
-    }
-
-    private String buildStatus(StateMachineContext<States, Events> context) {
-        var statuses = new ArrayList<String>();
-        statuses.add(context.getState().name());
-        if (!isEmpty(context.getChilds())) {
-            context.getChilds().forEach(c -> statuses.add(c.getState().name()));
-        }
-        return join(DELIMITER, statuses);
     }
 
     @Override
@@ -75,19 +65,16 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
     }
 
     @Override
-    public void preStateChange(State<States, Events> state, Message<Events> message,
-                               Transition<States, Events> transition, StateMachine<States, Events> stateMachine,
-                               StateMachine<States, Events> rootStateMachine) {
-    }
-
-    @Override
     public void postStateChange(State<States, Events> state, Message<Events> message,
                                 Transition<States, Events> transition,
                                 StateMachine<States, Events> stateMachine,
                                 StateMachine<States, Events> rootStateMachine) {
-        if (state != null && transition != null && transition.getKind() != TransitionKind.INITIAL) {
-            write(buildStateMachineContext(stateMachine, rootStateMachine, state, message), rootStateMachine.getId());
-        }
+        // Не записываем переход из Start в Init State (CALCULATION_STARTED), т.к. при инициализации
+        // StateMachine, которой нет в памяти, вызывается `persist.write(context, machineId)` на
+        // init transaction, т.е. в CalculationStatus всегда записывается начальное состояние.
+        // Как следствие в CalculationStatus появляется запись `CALCULATION_STARTED`, даже если
+        // для этого `calculationUid` уже есть записи. Для решения этой проблемы создано фиктивное
+        // состояние `CALCULATION_STARTED`, которое не записывается в БД.
     }
 
     @Override
@@ -97,21 +84,13 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
 
     protected abstract States restoreState(@NotNull String state);
 
-    @Override
-    protected StateMachineContext<States, Events> buildStateMachineContext(StateMachine<States, Events> stateMachine,
-                                                                           StateMachine<States, Events> rootStateMachine,
-                                                                           State<States, Events> state,
-                                                                           Message<Events> message) {
-        final var states = List.copyOf(rootStateMachine.getState().getIds());
-        final var payload = !isNull(message) ? message.getPayload() : null;
-        final var headers = !isNull(message) ? message.getHeaders() : null;
-        final List<StateMachineContext<States, Events>> childrenStates = range(1, states.size())
-                .mapToObj(i -> new DefaultStateMachineContext<>(states.get(i), payload, null, null))
-                .collect(toList());
-
-        return new DefaultStateMachineContext<>(childrenStates, rootStateMachine.getState().getId(),
-                                                payload,
-                                                headers,
-                                                stateMachine.getExtendedState());
+    @NotNull
+    private String buildStatus(@NotNull StateMachineContext<States, Events> context) {
+        var statuses = new ArrayList<String>();
+        statuses.add(context.getState().name());
+        if (!isEmpty(context.getChilds())) {
+            context.getChilds().forEach(c -> statuses.add(c.getState().name()));
+        }
+        return join(DELIMITER, statuses);
     }
 }
