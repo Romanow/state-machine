@@ -16,18 +16,23 @@ import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.statemachine.support.StateMachineInterceptor;
 import org.springframework.statemachine.transition.Transition;
 import org.springframework.statemachine.transition.TransitionKind;
+import ru.romanow.state.machine.models.StateDescriptor;
+import ru.romanow.state.machine.models.StateDescriptor.StateMachineType;
 
 import static java.lang.String.join;
-import static java.util.List.copyOf;
+import static java.util.List.of;
 import static java.util.Objects.isNull;
 import static java.util.UUID.fromString;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.IntStream.range;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.springframework.util.CollectionUtils.isEmpty;
+import static ru.romanow.state.machine.models.StateDescriptor.StateMachineType.MAIN;
 
 @RequiredArgsConstructor
-public abstract class BaseCustomStateMachinePersist<States extends Enum<States>, Events extends Enum<Events>>
+public abstract class BaseCustomStateMachinePersist<States extends Enum<States> & StateDescriptor, Events extends Enum<Events>>
         extends AbstractPersistingStateMachineInterceptor<States, Events, String>
         implements StateMachineRuntimePersister<States, Events, String> {
 
@@ -73,6 +78,10 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
             StateMachine<States, Events> stateMachine,
             StateMachine<States, Events> rootStateMachine
     ) {
+        // Т.к. для параллельных состояний Spring State Machine описывается кортежем состояний,
+        // то при сохранении нужно получить их все. `state.getId()` содержит только одно состояние (измененное),
+        // а глобальное состояние можно получить из `rootStateMachine.getState().getIds()`, но в методе
+        // preStateChange (из которого вызывается write) передается еще не измененная State Machine.
     }
 
     @Override
@@ -92,8 +101,6 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
         return this;
     }
 
-    protected abstract States restoreState(@NotNull String state);
-
     @Override
     protected StateMachineContext<States, Events> buildStateMachineContext(
             StateMachine<States, Events> stateMachine,
@@ -101,24 +108,43 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
             State<States, Events> state,
             Message<Events> message
     ) {
-        final var states = !rootStateMachine.isComplete()
-                ? copyOf(rootStateMachine.getState().getIds())
-                : copyOf(state.getIds());
-
         final var payload = !isNull(message) ? message.getPayload() : null;
         final var headers = !isNull(message) ? message.getHeaders() : null;
 
-        final List<StateMachineContext<States, Events>> childrenStates = range(1, states.size())
-                .mapToObj(i -> new DefaultStateMachineContext<>(states.get(i), payload, null, null))
-                .collect(toList());
+        // Если меняется главное состояние State Machine, то записываем только его,
+        // если меняются вложенные, то сохраняем все состояния
+        if (state.getId().type() != MAIN) {
+            final var states = rootStateMachine
+                    .getState()
+                    .getIds()
+                    .stream()
+                    .collect(toMap(StateDescriptor::type, identity()));
 
-        return new DefaultStateMachineContext<>(childrenStates,
-                                                !rootStateMachine.isComplete()
-                                                        ? rootStateMachine.getState().getId()
-                                                        : state.getId(),
-                                                payload,
-                                                headers,
+            states.put(state.getId().type(), state.getId());
+
+            final List<StateMachineContext<States, Events>> childrenStates = secondaryMachineTypes()
+                    .stream()
+                    .filter(states::containsKey)
+                    .map(type -> new DefaultStateMachineContext<>(states.get(type), payload, null, null))
+                    .collect(toList());
+
+            return new DefaultStateMachineContext<>(childrenStates,
+                                                    states.get(MAIN),
+                                                    payload,
+                                                    headers,
+                                                    stateMachine.getExtendedState());
+        }
+
+        return new DefaultStateMachineContext<>(state.getId(), payload, headers,
                                                 stateMachine.getExtendedState());
+
+
+    }
+
+    protected abstract States restoreState(@NotNull String state);
+
+    protected List<StateMachineType> secondaryMachineTypes() {
+        return of();
     }
 
     @NotNull

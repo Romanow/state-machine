@@ -26,9 +26,13 @@ import static java.util.Objects.nonNull;
 import static java.util.stream.Collectors.toSet;
 import static ru.romanow.state.machine.domain.CalculationTypes.CASHFLOW;
 import static ru.romanow.state.machine.domain.CalculationTypes.VSSDV;
+import static ru.romanow.state.machine.models.StateDescriptor.StateMachineType.BLACK_MODEL;
+import static ru.romanow.state.machine.models.StateDescriptor.StateMachineType.MAIN;
+import static ru.romanow.state.machine.models.StateDescriptor.StateMachineType.VAR_MODEL;
 
 @Configuration
 public class StateMachineConfiguration {
+
     private static final Logger logger = LoggerFactory.getLogger(StateMachineConfiguration.class);
 
     @Bean
@@ -41,6 +45,7 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class CashFlowStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<CashFlowStates, CashFlowEvents> {
+
         private final CashFlowCustomStateMachinePersist cashFlowStateMachinePersist;
 
         @Override
@@ -160,6 +165,7 @@ public class StateMachineConfiguration {
                         .event(CashFlowEvents.CALCULATION_ERROR_EVENT);
             }
         }
+
     }
 
     @Configuration
@@ -167,6 +173,7 @@ public class StateMachineConfiguration {
     @RequiredArgsConstructor
     static class VssdvStateMachineConfiguration
             extends EnumStateMachineConfigurerAdapter<VssdvStates, VssdvEvents> {
+
         private final VssdvCustomStateMachinePersist vssdvStateMachinePersist;
 
         @Override
@@ -191,7 +198,7 @@ public class StateMachineConfiguration {
                       .join(VssdvStates.VSSDV_JOIN_STATE)
                       .states(allOf(VssdvStates.class)
                                       .stream()
-                                      .filter(s -> s.name().startsWith("VSSDV_"))
+                                      .filter(s -> s.type() == MAIN)
                                       .collect(toSet()))
                       .end(VssdvStates.VSSDV_CALCULATION_FINISHED)
                       .end(VssdvStates.CALCULATION_ERROR)
@@ -203,7 +210,7 @@ public class StateMachineConfiguration {
                       .end(VssdvStates.VAR_MODEL_CALCULATION_FINISHED)
                       .states(allOf(VssdvStates.class)
                                       .stream()
-                                      .filter(s -> s.name().startsWith("VAR_MODEL_"))
+                                      .filter(s -> s.type() == VAR_MODEL)
                                       .collect(toSet()))
                   .and()
                   .withStates()
@@ -213,7 +220,7 @@ public class StateMachineConfiguration {
                       .end(VssdvStates.BLACK_MODEL_CALCULATION_FINISHED)
                       .states(allOf(VssdvStates.class)
                                       .stream()
-                                      .filter(s -> s.name().startsWith("BLACK_MODEL_"))
+                                      .filter(s -> s.type() == BLACK_MODEL)
                                       .collect(toSet()));
             // @formatter:on
         }
@@ -492,13 +499,17 @@ public class StateMachineConfiguration {
                            .event(VssdvEvents.CALCULATION_ERROR_EVENT);
             }
         }
+
     }
 
     private static class StateMachineListener<States extends Enum<States>, Events extends Enum<Events>>
             extends StateMachineListenerAdapter<States, Events> {
+
         @Override
         public void stateChanged(State<States, Events> from, State<States, Events> to) {
             logger.info("State changed from {} to: {}", nonNull(from) ? from.getIds() : "empty", to.getIds());
         }
+
     }
+
 }

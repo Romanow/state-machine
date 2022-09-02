@@ -1,6 +1,10 @@
 package ru.romanow.state.machine.models.cashflow;
 
-public enum CashFlowStates {
+import org.springframework.statemachine.support.StateMachineUtils;
+import ru.romanow.state.machine.models.StateDescriptor;
+
+public enum CashFlowStates
+        implements StateDescriptor {
     CALCULATION_STARTED,       // Начальное состояние
 
     DATA_PREPARED,             // Выполнены условия для старта расчета
@@ -26,5 +30,15 @@ public enum CashFlowStates {
 
     CALCULATION_FINISHED,      // Расчет завершен
 
-    CALCULATION_ERROR          // Расчет завершился с ошибкой
+    CALCULATION_ERROR;         // Расчет завершился с ошибкой
+
+    final StateMachineType descriptor;
+    CashFlowStates() {
+        this.descriptor = StateMachineType.MAIN;
+    }
+
+    @Override
+    public StateMachineType type() {
+        return descriptor;
+    }
 }

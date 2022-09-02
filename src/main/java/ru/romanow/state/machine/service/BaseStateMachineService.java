@@ -16,9 +16,10 @@ import org.springframework.statemachine.StateMachine;
 import org.springframework.statemachine.StateMachineContext;
 import org.springframework.statemachine.config.StateMachineFactory;
 import org.springframework.statemachine.listener.StateMachineListenerAdapter;
+import ru.romanow.state.machine.models.StateDescriptor;
 
 @RequiredArgsConstructor
-public abstract class BaseStateMachineService<States extends Enum<States>, Events extends Enum<Events>>
+public abstract class BaseStateMachineService<States extends Enum<States> & StateDescriptor, Events extends Enum<Events>>
         implements StateMachineService<States, Events>,
                    DisposableBean {
     private static final Logger logger = LoggerFactory.getLogger(BaseStateMachineService.class);

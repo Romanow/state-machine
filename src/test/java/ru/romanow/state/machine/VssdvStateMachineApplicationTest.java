@@ -68,7 +68,8 @@ class VssdvStateMachineApplicationTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "ba012596-4be8-4c96-9721-07b7f9902a6a", "1066c60a-b6af-4b87-9207-c1109d7dfaa1"
+            "ba012596-4be8-4c96-9721-07b7f9902a6a",
+            "1066c60a-b6af-4b87-9207-c1109d7dfaa1"
     })
     void test(String calculationUid) {
         var stateHistory = new LinkedList<String[]>();
@@ -196,6 +197,11 @@ class VssdvStateMachineApplicationTest {
                   of(CALCULATION_STARTED, VAR_MODEL_CALCULATION_FINISHED, BLACK_MODEL_DATA_COPIED_FROM_STAGED),
                   stateHistory);
 
+        stateHistory.addFirst(new String[]{
+                CALCULATION_STARTED.name(),
+                VAR_MODEL_CALCULATION_FINISHED.name(),
+                BLACK_MODEL_CALCULATION_FINISHED.name()
+        });
         nextState(stateMachine, BLACK_MODEL_CALCULATION_FINISHED_EVENT, of(VSSDV_CALCULATION_STARTED), stateHistory);
 
         nextState(stateMachine, VSSDV_DATA_PREPARED_EVENT, of(VSSDV_DATA_PREPARED), stateHistory);
