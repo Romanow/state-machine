@@ -170,8 +170,7 @@ public class StateMachineConfiguration {
         private final VssdvCustomStateMachinePersist vssdvStateMachinePersist;
 
         @Override
-        public void configure(StateMachineConfigurationConfigurer<VssdvStates, VssdvEvents> config)
-                throws Exception {
+        public void configure(StateMachineConfigurationConfigurer<VssdvStates, VssdvEvents> config) throws Exception {
             // @formatter:off
             config.withConfiguration()
                       .autoStartup(true)
@@ -183,8 +182,7 @@ public class StateMachineConfiguration {
         }
 
         @Override
-        public void configure(StateMachineStateConfigurer<VssdvStates, VssdvEvents> states)
-                throws Exception {
+        public void configure(StateMachineStateConfigurer<VssdvStates, VssdvEvents> states) throws Exception {
             // @formatter:off
             states.withStates()
                       .region("VSSDV")
@@ -221,8 +219,7 @@ public class StateMachineConfiguration {
         }
 
         @Override
-        public void configure(StateMachineTransitionConfigurer<VssdvStates, VssdvEvents> transitions)
-                throws Exception {
+        public void configure(StateMachineTransitionConfigurer<VssdvStates, VssdvEvents> transitions) throws Exception {
             // @formatter:off
             // region Var Model
             transitions
@@ -489,11 +486,10 @@ public class StateMachineConfiguration {
             // @formatter:on
 
             for (var state : VssdvStates.values()) {
-                transitions
-                        .withExternal()
-                        .source(state)
-                        .target(VssdvStates.CALCULATION_ERROR)
-                        .event(VssdvEvents.CALCULATION_ERROR_EVENT);
+                transitions.withExternal()
+                           .source(state)
+                           .target(VssdvStates.CALCULATION_ERROR)
+                           .event(VssdvEvents.CALCULATION_ERROR_EVENT);
             }
         }
     }

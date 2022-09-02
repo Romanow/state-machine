@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.springframework.messaging.Message;
 import org.springframework.statemachine.StateMachine;
@@ -18,7 +17,6 @@ import org.springframework.statemachine.support.StateMachineInterceptor;
 import org.springframework.statemachine.transition.Transition;
 
 import static java.lang.String.join;
-import static java.util.Objects.isNull;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -65,10 +63,12 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
     }
 
     @Override
-    public void postStateChange(State<States, Events> state, Message<Events> message,
-                                Transition<States, Events> transition,
-                                StateMachine<States, Events> stateMachine,
-                                StateMachine<States, Events> rootStateMachine) {
+    public void postStateChange(
+            State<States, Events> state, Message<Events> message,
+            Transition<States, Events> transition,
+            StateMachine<States, Events> stateMachine,
+            StateMachine<States, Events> rootStateMachine
+    ) {
         // Не записываем переход из Start в Init State (CALCULATION_STARTED), т.к. при инициализации
         // StateMachine, которой нет в памяти, вызывается `persist.write(context, machineId)` на
         // init transaction, т.е. в CalculationStatus всегда записывается начальное состояние.
@@ -93,4 +93,5 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
         }
         return join(DELIMITER, statuses);
     }
+
 }

@@ -36,12 +36,12 @@ public class CalculationStatus {
     @JoinColumn(name = "calculation_id", foreignKey = @ForeignKey(name = "fk_calculation_status_calculation_id"))
     private Calculation calculation;
 
+    @Column(name = "status", nullable = false)
+    private String status;
+
     @CreatedDate
     @Column(name = "created_date", nullable = false, updatable = false)
     private LocalDateTime createdDate;
-
-    @Column(name = "status", nullable = false)
-    private String status;
 
     @Override
     public boolean equals(Object o) {
@@ -55,18 +55,20 @@ public class CalculationStatus {
 
         final CalculationStatus that = (CalculationStatus) o;
 
-        return new EqualsBuilder().append(id, that.id)
-                                  .append(status, that.status)
-                                  .append(createdDate, that.createdDate)
-                                  .isEquals();
+        return new EqualsBuilder()
+                .append(id, that.id)
+                .append(status, that.status)
+                .append(createdDate, that.createdDate)
+                .isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(id)
-                                          .append(status)
-                                          .append(createdDate)
-                                          .toHashCode();
+        return new HashCodeBuilder(17, 37)
+                .append(id)
+                .append(status)
+                .append(createdDate)
+                .toHashCode();
     }
 
     @Override
