@@ -74,9 +74,10 @@ class VssdvStateMachineApplicationTest {
         var stateHistory = new LinkedList<String[]>();
         var stateMachine = stateMachineService.acquireStateMachine(calculationUid);
 
-        assertThat(stateMachine.getState().getIds()).containsExactlyInAnyOrder(CALCULATION_STARTED,
-                                                                               VAR_MODEL_CALCULATION_STARTED,
-                                                                               BLACK_MODEL_CALCULATION_STARTED);
+        assertThat(stateMachine.getState().getIds())
+                .containsExactlyInAnyOrder(CALCULATION_STARTED,
+                                           VAR_MODEL_CALCULATION_STARTED,
+                                           BLACK_MODEL_CALCULATION_STARTED);
 
         nextState(stateMachine, VAR_MODEL_DATA_PREPARED_EVENT,
                   of(CALCULATION_STARTED, VAR_MODEL_DATA_PREPARED, BLACK_MODEL_CALCULATION_STARTED), stateHistory);
@@ -235,8 +236,12 @@ class VssdvStateMachineApplicationTest {
         assertThat(stateMachine.getState().getId()).isEqualTo(VssdvStates.CALCULATION_STARTED);
     }
 
-    private void nextState(@NotNull StateMachine<VssdvStates, VssdvEvents> stateMachine, @NotNull VssdvEvents event,
-                           @NotNull List<VssdvStates> expectedStates, @NotNull LinkedList<String[]> stateHistory) {
+    private void nextState(
+            @NotNull StateMachine<VssdvStates, VssdvEvents> stateMachine,
+            @NotNull VssdvEvents event,
+            @NotNull List<VssdvStates> expectedStates,
+            @NotNull LinkedList<String[]> stateHistory
+    ) {
         final var message = withPayload(event).build();
         final var result = stateMachine.sendEvent(just(message)).blockLast();
 
@@ -255,4 +260,5 @@ class VssdvStateMachineApplicationTest {
             assertThat(state.split(DELIMITER)).containsExactlyInAnyOrder(stateHistory.get(i));
         }
     }
+
 }

@@ -15,8 +15,11 @@ import org.springframework.statemachine.state.State;
 import org.springframework.statemachine.support.DefaultStateMachineContext;
 import org.springframework.statemachine.support.StateMachineInterceptor;
 import org.springframework.statemachine.transition.Transition;
+import org.springframework.statemachine.transition.TransitionKind;
 
 import static java.lang.String.join;
+import static java.util.List.copyOf;
+import static java.util.Objects.isNull;
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -63,18 +66,25 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
     }
 
     @Override
+    public void preStateChange(
+            State<States, Events> state,
+            Message<Events> message,
+            Transition<States, Events> transition,
+            StateMachine<States, Events> stateMachine,
+            StateMachine<States, Events> rootStateMachine
+    ) {
+    }
+
+    @Override
     public void postStateChange(
             State<States, Events> state, Message<Events> message,
             Transition<States, Events> transition,
             StateMachine<States, Events> stateMachine,
             StateMachine<States, Events> rootStateMachine
     ) {
-        // Не записываем переход из Start в Init State (CALCULATION_STARTED), т.к. при инициализации
-        // StateMachine, которой нет в памяти, вызывается `persist.write(context, machineId)` на
-        // init transaction, т.е. в CalculationStatus всегда записывается начальное состояние.
-        // Как следствие в CalculationStatus появляется запись `CALCULATION_STARTED`, даже если
-        // для этого `calculationUid` уже есть записи. Для решения этой проблемы создано фиктивное
-        // состояние `CALCULATION_STARTED`, которое не записывается в БД.
+        if (state != null && transition != null && transition.getKind() != TransitionKind.INITIAL) {
+            write(buildStateMachineContext(stateMachine, rootStateMachine, state, message), rootStateMachine.getId());
+        }
     }
 
     @Override
@@ -83,6 +93,33 @@ public abstract class BaseCustomStateMachinePersist<States extends Enum<States>,
     }
 
     protected abstract States restoreState(@NotNull String state);
+
+    @Override
+    protected StateMachineContext<States, Events> buildStateMachineContext(
+            StateMachine<States, Events> stateMachine,
+            StateMachine<States, Events> rootStateMachine,
+            State<States, Events> state,
+            Message<Events> message
+    ) {
+        final var states = !rootStateMachine.isComplete()
+                ? copyOf(rootStateMachine.getState().getIds())
+                : copyOf(state.getIds());
+
+        final var payload = !isNull(message) ? message.getPayload() : null;
+        final var headers = !isNull(message) ? message.getHeaders() : null;
+
+        final List<StateMachineContext<States, Events>> childrenStates = range(1, states.size())
+                .mapToObj(i -> new DefaultStateMachineContext<>(states.get(i), payload, null, null))
+                .collect(toList());
+
+        return new DefaultStateMachineContext<>(childrenStates,
+                                                !rootStateMachine.isComplete()
+                                                        ? rootStateMachine.getState().getId()
+                                                        : state.getId(),
+                                                payload,
+                                                headers,
+                                                stateMachine.getExtendedState());
+    }
 
     @NotNull
     private String buildStatus(@NotNull StateMachineContext<States, Events> context) {
